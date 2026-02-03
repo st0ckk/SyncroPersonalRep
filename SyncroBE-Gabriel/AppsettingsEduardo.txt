@@ -1,0 +1,17 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=EdPc;Initial Catalog=syncro;Integrated Security=True;Encrypt=False"
+  },
+  "Jwt": {
+    "Key": "ESTA_ES_UNA_CLAVE_SUPER_SECRETA_CAMBIALA_123456789",
+    "Issuer": "SyncroBE",
+    "Audience": "SyncroFE"
+  }
+}
