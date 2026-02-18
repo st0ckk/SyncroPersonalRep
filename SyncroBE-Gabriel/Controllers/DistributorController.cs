@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SyncroBE.Application.DTOs.Distributor;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
@@ -7,6 +8,7 @@ namespace Syncro.API.Controllers
 {
     [ApiController]
     [Route("api/distributors")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class DistributorController : ControllerBase
     {
         private readonly IDistributorRepository _repository;

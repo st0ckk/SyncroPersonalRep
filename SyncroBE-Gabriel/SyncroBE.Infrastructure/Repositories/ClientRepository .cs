@@ -53,6 +53,24 @@ namespace SyncroBE.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c => c.ClientId == clientId);
         }
 
+        public async Task<IEnumerable<Client>> GetLookupAsync()
+        {
+            return await _context.Clients
+                .AsNoTracking()
+                .Include(c => c.Province)
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.ClientName)
+                .Select(c => new Client
+                {
+                    ClientId = c.ClientId,
+                    ClientName = c.ClientName,
+                    ClientType = c.ClientType,
+                    Province = c.Province
+                })
+                .ToListAsync();
+        }
+
+
 
         public async Task AddAsync(Client client)
         {

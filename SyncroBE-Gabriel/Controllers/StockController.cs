@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.DTOs;
 using SyncroBE.Application.DTOs.Product;
@@ -11,6 +12,7 @@ namespace SyncroBE.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
 public class StockController : ControllerBase
 {
     private readonly IProductRepository _repository;

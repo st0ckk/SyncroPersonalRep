@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using SyncroBE.Application.DTOs.Client;
+using SyncroBE.Application.DTOs.Distributor;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
 
@@ -7,6 +9,7 @@ namespace SyncroBE.API.Controllers
 {
     [ApiController]
     [Route("api/clients")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class ClientController : ControllerBase
     {
         private readonly IClientRepository _repository;
@@ -153,7 +156,66 @@ namespace SyncroBE.API.Controllers
             return NoContent();
         }
 
-        //HHAHA
+        // GET: api/clients/{id}
+        // Obtener un cliente por id (para editar / detalle)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            var client = await _repository.GetByIdAsync(id);
+            if (client == null)
+                return NotFound();
+
+            var dto = new ClientDto
+            {
+                ClientId = client.ClientId,
+                ClientName = client.ClientName,
+                ClientEmail = client.ClientEmail,
+                ClientPhone = client.ClientPhone,
+                ClientType = client.ClientType,
+                ClientElectronicInvoice = client.ClientElectronicInvoice,
+                IsActive = client.IsActive,
+
+                ProvinceCode = client.ProvinceCode,
+                ProvinceName = client.Province?.ProvinceName,
+
+                CantonCode = client.CantonCode,
+                CantonName = client.Canton?.CantonName,
+
+                DistrictCode = client.DistrictCode,
+                DistrictName = client.District?.DistrictName,
+
+                ExactAddress = client.ExactAddress,
+
+                Location = client.Location == null
+                    ? null
+                    : new ClientLocationDto
+                    {
+                        Latitude = client.Location.Latitude,
+                        Longitude = client.Location.Longitude,
+                        Address = client.Location.Address
+                    }
+            };
+
+            return Ok(dto);
+        }
+
+        // aca se busca por dinamicamente los distribuidores,
+        // búsqueda dinámica para filtros / autocomplete
+        [HttpGet("lookup")]
+        public async Task<IActionResult> Lookup()
+        {
+            var data = await _repository.GetLookupAsync();
+
+            return Ok(data.Select(c => new ClientLookupDto
+            {
+                ClientId = c.ClientId,
+                ClientName = c.ClientName,
+                ClientType = c.ClientType,
+                ProvinceName = c.Province?.ProvinceName
+            }));
+        }
+
+
 
     }
 }

@@ -20,6 +20,7 @@ namespace SyncroBE.Domain.Entities
         public DateTime QuoteValidDate { get; set; }
         public string QuoteRemarks { get; set; }
         public string QuoteConditions { get; set; }
+        public string QuoteStatus { get; set; }
         public virtual User User { get; set; }
         public Client Client { get; set; }
         public ICollection<QuoteDetail> QuoteDetails { get; set; }

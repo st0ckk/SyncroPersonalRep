@@ -6,6 +6,7 @@ using SyncroBE.Application.Interfaces;
 using SyncroBE.Infrastructure.Auth;
 using SyncroBE.Infrastructure.Data;
 using SyncroBE.Infrastructure.Repositories;
+using SyncroBE.Infrastructure.Services;
 using System.Text;
 
 /*
@@ -31,6 +32,13 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IDistributorRepository, DistributorRepository>();
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IQuoteRepository, QuoteRepository>();
+builder.Services.AddScoped<IAssetRepository, AssetRepository>();
+builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
+
+// =========================
+// PDF SERVICE
+// =========================
+builder.Services.AddScoped<IPdfService, PdfService>();
 
 // =========================
 // JWT SERVICE

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SyncroBE.Application.DTOs.Address
 {
-    public record DistrictDto(
+    public record AssetCreateDto(
         int DistrictCode,
         string DistrictName
     );

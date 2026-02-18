@@ -9,7 +9,12 @@ namespace SyncroBE.Application.Interfaces
 {
     public interface IQuoteRepository
     {
-        //Traiga todas las cotizaciones, incluido los detalles
+        Task AddAsync(Quote quote);
         Task<IEnumerable<Quote>> GetAllAsync();
+        Task<Quote?> GetById(int id);
+        Task<IEnumerable<Quote>> FilterAsync(DateTime? startDate,DateTime? endDate, string searchTerm, string state);
+        Task UpdateAsync(Quote quote);
+
+
     }
 }

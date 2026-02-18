@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SyncroBE.Application.DTOs.Address
 {
-    public record CantonDto(
+    public record AssetDto(
         int CantonCode,
         string CantonName
     );

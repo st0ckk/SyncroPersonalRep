@@ -25,3 +25,45 @@ Recordar modificar "**appsettings.json**" e incluir su conexion a base de datos,
 Add-Migration AddQuoteTables -Project SyncroBE.Infrastructure -StartupProject SyncroBE.API -Context SyncroDbContext
 
 Update-Database AddQuoteTables -Project SyncroBE.Infrastructure -StartupProject SyncroBE.API -Context SyncroDbContext
+
+
+/---------------------Agregar QuoteStatus a Quotes---------------------/
+
+ALTER TABLE Quotes
+ADD quote_status NVARCHAR(50) NOT NULL DEFAULT 'pending'
+
+
+/---------------------Cambiar fechas a datetime2 en Quotes---------------------/
+
+--Cambiar QuoteValidDate a datetime2
+ALTER TABLE Quotes
+ADD QuoteValidDate_Temp DATETIME2(7)
+
+UPDATE Quotes
+SET QuoteValidDate_Temp = CAST(quote_validdate AS DATETIME2(7))
+
+ALTER TABLE Quotes
+DROP COLUMN quote_validdate
+
+
+EXEC sp_rename 'Quotes.QuoteValidDate_Temp', 'quote_validdate', 'COLUMN'
+
+
+--Cambiar QuoteDate a datetime2
+ALTER TABLE Quotes
+ADD QuoteDate_Temp DATETIME2(7)
+
+UPDATE Quotes
+SET QuoteDate_Temp = CAST(quote_date AS DATETIME2(7))
+
+ALTER TABLE Quotes
+DROP COLUMN quote_date
+
+EXEC sp_rename 'Quotes.QuoteDate_Temp', 'quote_date', 'COLUMN'
+
+//Employee schedule 
+
+Agregar migración: 
+
+dotnet ef migrations add AddEmployeeSchedule
+dotnet ef database update

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SyncroBE.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SyncroBE.Infrastructure.Data;
 namespace SyncroBE.Infrastructure.Migrations
 {
     [DbContext(typeof(SyncroDbContext))]
-    partial class SyncroDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260207201204_AddAssetTable")]
+    partial class AddAssetTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -418,12 +421,6 @@ namespace SyncroBE.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("varchar(max)")
                         .HasColumnName("quote_remarks");
-
-                    b.Property<string>("QuoteStatus")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
-                        .HasColumnName("quote_status");
 
                     b.Property<DateTime>("QuoteValidDate")
                         .HasColumnType("datetime2")

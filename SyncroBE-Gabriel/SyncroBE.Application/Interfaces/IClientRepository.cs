@@ -13,11 +13,13 @@ namespace SyncroBE.Application.Interfaces
         Task<IEnumerable<Client>> GetInactiveAsync();
         Task<Client?> GetByIdAsync(string clientId);
 
+        Task<IEnumerable<Client>> GetLookupAsync();
+
         Task AddAsync(Client client);
         Task UpdateAsync(Client client);
-
         Task DeactivateAsync(string clientId);
         Task ActivateAsync(string clientId);
     }
+
 }
 
