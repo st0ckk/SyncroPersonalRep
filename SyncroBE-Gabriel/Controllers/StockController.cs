@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.DTOs;
+using SyncroBE.Application.DTOs.Discount;
 using SyncroBE.Application.DTOs.Product;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
@@ -233,8 +234,6 @@ public class StockController : ControllerBase
 
         return NoContent();
     }
-
-
 
 
 }

@@ -124,6 +124,4 @@ public class ProductRepository : IProductRepository
             .Take(10)
             .ToListAsync();
     }
-
-
 }

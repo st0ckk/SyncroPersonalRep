@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace SyncroBE.Application.DTOs.QuoteDetails
 {
-    public class QuoteDetailDto
+    public class QuoteDetailCreateUpdateDto
     {
-        public int QuoteDetailId { get; set; }
+        public int QuoteId { get; set; }
         public int ProductId { get; set; }
         public string ProductName { get; set; }
         public int Quantity { get; set; }

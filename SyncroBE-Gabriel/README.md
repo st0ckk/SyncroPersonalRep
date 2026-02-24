@@ -67,3 +67,32 @@ Agregar migración:
 
 dotnet ef migrations add AddEmployeeSchedule
 dotnet ef database update
+
+/---------------------Descuentos y Quote Descuentos---------------------/
+
+BEGIN TRANSACTION;
+ALTER TABLE [quotes] ADD [discount_id] int NULL;
+
+ALTER TABLE [quotes] ADD [quote_discountapplied] bit NOT NULL DEFAULT CAST(0 AS bit);
+
+ALTER TABLE [quotes] ADD [quote_discountpercentage] int NOT NULL DEFAULT 0;
+
+ALTER TABLE [quotes] ADD [quote_discountreason] varchar(max) NOT NULL DEFAULT '';
+
+CREATE TABLE [discount] (
+    [discount_id] int NOT NULL IDENTITY,
+    [discount_name] nvarchar(150) NOT NULL,
+    [discount_percentage] int NOT NULL,
+    [is_active] bit NOT NULL,
+    CONSTRAINT [PK_discount] PRIMARY KEY ([discount_id])
+);
+
+CREATE INDEX [IX_quotes_discount_id] ON [quotes] ([discount_id]);
+
+ALTER TABLE [quotes] ADD CONSTRAINT [FK_quotes_discount_discount_id] FOREIGN KEY ([discount_id]) REFERENCES [discount] ([discount_id]);
+
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260220152918_AddDiscountTables', N'9.0.11');
+
+COMMIT;
+GO

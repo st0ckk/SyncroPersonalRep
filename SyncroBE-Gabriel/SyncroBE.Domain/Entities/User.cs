@@ -18,6 +18,11 @@ public class User
 
     public DateTime? LastLogin { get; set; }
 
+    // para lo de bloqueo por intentos fallidos 
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEnd { get; set; }
+
     public ICollection<Quote> Quotes { get; set; }
 
+    public ICollection<Purchase> Purchases { get; set; }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using SyncroBE.Application.DTOs.User;
+using SyncroBE.Application.Interfaces;
 using SyncroBE.Infrastructure.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,27 +15,85 @@ namespace SyncroBE.API.Controllers
     {
         private readonly SyncroDbContext _context;
         private readonly IConfiguration _config;
+        private readonly IAuditService _audit;
 
-        public AuthController(SyncroDbContext context, IConfiguration config)
+        private const int MaxFailedAttempts = 3;
+        private const int LockoutMinutes = 15;
+
+        public AuthController(SyncroDbContext context, IConfiguration config, IAuditService audit)
         {
             _context = context;
             _config = config;
+            _audit = audit;
         }
 
         [HttpPost("login")]
-        public IActionResult Login(LoginDto dto)
+        public async Task<IActionResult> Login(LoginDto dto)
         {
             var user = _context.Users
-                .FirstOrDefault(u => u.UserEmail == dto.Email && u.IsActive);
+                .FirstOrDefault(u => u.UserEmail == dto.Email);
 
-            if (user == null)
-                return Unauthorized("Usuario no encontrado");
+            // ── Usuario no existe o está inactivo ──
+            if (user == null || !user.IsActive)
+                return Unauthorized(new { message = "Credenciales inválidas" });
 
+            // ── Verificar si está bloqueado ──
+            if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTime.UtcNow)
+            {
+                var remaining = (int)Math.Ceiling((user.LockoutEnd.Value - DateTime.UtcNow).TotalMinutes);
+                return StatusCode(423, new
+                {
+                    message = $"Cuenta bloqueada. Intente de nuevo en {remaining} minuto(s).",
+                    lockoutEnd = user.LockoutEnd.Value,
+                    remainingMinutes = remaining
+                });
+            }
+
+            // ── Si el lockout ya expiró, resetear ──
+            if (user.LockoutEnd.HasValue && user.LockoutEnd.Value <= DateTime.UtcNow)
+            {
+                user.FailedLoginAttempts = 0;
+                user.LockoutEnd = null;
+            }
+
+            // ── Verificar contraseña ──
             if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return Unauthorized("Credenciales inválidas");
+            {
+                user.FailedLoginAttempts++;
 
+                if (user.FailedLoginAttempts >= MaxFailedAttempts)
+                {
+                    user.LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutMinutes);
+
+                    await _audit.LogAsync("User", user.UserId.ToString(), "ACCOUNT_LOCKED",
+                        user.UserId, $"Bloqueado por {MaxFailedAttempts} intentos fallidos");
+
+                    await _context.SaveChangesAsync();
+
+                    return StatusCode(423, new
+                    {
+                        message = $"Cuenta bloqueada por {LockoutMinutes} minutos debido a {MaxFailedAttempts} intentos fallidos.",
+                        lockoutEnd = user.LockoutEnd.Value,
+                        remainingMinutes = LockoutMinutes
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+
+                var attemptsLeft = MaxFailedAttempts - user.FailedLoginAttempts;
+                return Unauthorized(new
+                {
+                    message = $"Credenciales inválidas. {attemptsLeft} intento(s) restante(s)."
+                });
+            }
+
+            // ── Login exitoso: resetear contadores ──
+            user.FailedLoginAttempts = 0;
+            user.LockoutEnd = null;
             user.LastLogin = DateTime.UtcNow;
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+
+            await _audit.LogAsync("User", user.UserId.ToString(), "LOGIN_SUCCESS", user.UserId);
 
             var claims = new[]
             {

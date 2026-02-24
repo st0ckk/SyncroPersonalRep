@@ -108,7 +108,7 @@ namespace SyncroBE.Infrastructure.Services
         }
         private string GetQuoteBodyDetails(QuoteDto quote)
         {
-            int counter = 0;
+            int counter = 1;
             StringBuilder htmlBodyDetails = new StringBuilder();
             htmlBodyDetails.Append(@"
                     <div class=""px-14 py-10 text-sm text-neutral-700"">
@@ -145,31 +145,29 @@ namespace SyncroBE.Infrastructure.Services
                                             <td>
                                                 <table class=""w-full border-collapse border-spacing-0"">
                                                     <tbody>
-<!--
                                                         <tr>
                                                             <td class=""border-b p-3"">
-                                                                <div class=""whitespace-nowrap text-slate-400"">Total:</div>
+                                                                <div class=""whitespace-nowrap text-slate-400"">Subtotal:</div>
                                                             </td>
                                                             <td class=""border-b p-3 text-right"">
-                                                                <div class=""whitespace-nowrap font-bold text-main"">$320.00</div>
+                                                                <div class=""whitespace-nowrap font-bold text-main"">₡{quote.QuoteTotal}</div>
                                                             </td>
                                                         </tr>
                                                         <tr>
                                                             <td class=""p-3"">
-                                                                <div class=""whitespace-nowrap text-slate-400"">VAT total:</div>
+                                                                <div class=""whitespace-nowrap text-slate-400"">Descuentos:</div>
                                                             </td>
                                                             <td class=""p-3 text-right"">
-                                                                <div class=""whitespace-nowrap font-bold text-main"">$64.00</div>
+                                                                <div class=""whitespace-nowrap font-bold text-main"">{(quote.QuoteDiscountApplied ? quote.QuoteDiscountPercentage : 0)}%</div>
                                                             </td>
                                                         </tr>
--->
                                                         </br >
                                                         <tr>
                                                             <td class=""bg-main p-3"">
                                                                 <div class=""whitespace-nowrap font-bold text-white"">Total:</div>
                                                             </td>
                                                             <td class=""bg-main p-3 text-right"">
-                                                                <div class=""whitespace-nowrap font-bold text-white"">₡{quote.QuoteTotal}</div>
+                                                                <div class=""whitespace-nowrap font-bold text-white"">₡{Math.Round(quote.QuoteTotal - (quote.QuoteTotal * ((decimal)quote.QuoteDiscountPercentage/100)),2)}</div>
                                                             </td>
                                                         </tr>
                                                     </tbody>

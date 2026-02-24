@@ -30,10 +30,9 @@ namespace SyncroBE.Domain.Entities
         public Province? Province { get; set; }
         public Canton? Canton { get; set; }
         public District? District { get; set; }
-
         public ClientLocation? Location { get; set; }
-
         public ICollection<Quote> Quotes { get; set; }
+        public ICollection<Purchase> Purchases { get; set; }
     }
 }
 

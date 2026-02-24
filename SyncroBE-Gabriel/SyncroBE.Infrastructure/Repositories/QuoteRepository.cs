@@ -20,9 +20,24 @@ namespace SyncroBE.Infrastructure.Repositories
             _context = context;
         }
 
-        public Task AddAsync(Quote quote)
+        public async Task AddAsync(Quote quote, List<QuoteDetail> quoteItems)
         {
-            throw new NotImplementedException();
+            //Establecimiento del numero de cotizacion
+            var latestQuote = await _context.Quotes.OrderByDescending(q => q.QuoteNumber).FirstOrDefaultAsync();
+
+            int numberForQuote = (latestQuote != null ? int.Parse(latestQuote.QuoteNumber.Split('-')[2]) : 0) + 1;
+
+            quote.QuoteNumber = $"COT-{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}-{numberForQuote:D4}";
+            _context.Quotes.Add(quote);
+            await _context.SaveChangesAsync();
+
+            //Agrega cada item cotizado a la tabla de detalles
+            foreach(QuoteDetail qd in quoteItems)
+                qd.QuoteId = quote.QuoteId;
+
+            await _context.QuotesDetail.AddRangeAsync(quoteItems);
+
+            await _context.SaveChangesAsync();
         }
         public async Task<IEnumerable<Quote>> GetAllAsync()
         {
@@ -38,6 +53,15 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(qd => qd.QuoteDetails)
                 .Include(u => u.User)
                 .FirstOrDefaultAsync(q => q.QuoteId == id);
+        }
+
+        public async Task<Quote?> GetLatestByClient(string client)
+        {
+            return await _context.Quotes
+                .Include(u => u.User)
+                .Include(qd => qd.QuoteDetails)
+                .OrderByDescending(q => q.QuoteNumber)
+                .FirstOrDefaultAsync(q => q.ClientId == client);
         }
 
         public async Task<IEnumerable<Quote>> FilterAsync(DateTime? startDate, DateTime? endDate, string searchTerm, string status)
@@ -102,9 +126,26 @@ namespace SyncroBE.Infrastructure.Repositories
             return await data.ToListAsync();
         }
 
-        public Task UpdateAsync(Quote quote)
+        //Actualiza cotizacion
+        public async Task UpdateAsync(Quote quote, List<QuoteDetail> quoteItems)
         {
-            throw new NotImplementedException();
+            _context.Quotes.Update(quote);
+            await _context.SaveChangesAsync();
+
+            List<QuoteDetail> existingQuoteItems = await _context.QuotesDetail.Where(q => q.QuoteId == quote.QuoteId).ToListAsync();
+
+            //Elimina los items que no esta en la actualizacion
+            foreach (QuoteDetail qd in existingQuoteItems)
+            {
+                if (!quoteItems.Contains(qd))
+                {
+                    _context.QuotesDetail.Remove(qd);
+                }
+            }
+
+            await _context.QuotesDetail.AddRangeAsync(quoteItems);
+
+            await _context.SaveChangesAsync();
         }
     }
 }

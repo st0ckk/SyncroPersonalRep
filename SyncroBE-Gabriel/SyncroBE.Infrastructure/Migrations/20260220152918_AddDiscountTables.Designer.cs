@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SyncroBE.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using SyncroBE.Infrastructure.Data;
 namespace SyncroBE.Infrastructure.Migrations
 {
     [DbContext(typeof(SyncroDbContext))]
-    partial class SyncroDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220152918_AddDiscountTables")]
+    partial class AddDiscountTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -226,8 +229,7 @@ namespace SyncroBE.Infrastructure.Migrations
                 {
                     b.Property<int>("DiscountId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("discount_id");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DiscountId"));
 
@@ -437,61 +439,25 @@ namespace SyncroBE.Infrastructure.Migrations
                 {
                     b.Property<int>("PurchaseId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("purchase_id");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseId"));
 
-                    b.Property<string>("ClientId")
-                        .IsRequired()
-                        .HasColumnType("varchar(20)")
-                        .HasColumnName("client_id");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
+                    b.Property<int>("ClientId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("PurchaseDate")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("purchase_date");
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("PurchasePaid")
-                        .HasColumnType("bit")
-                        .HasColumnName("purchase_paid");
-
-                    b.Property<decimal>("Subtotal")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("subtotal");
-
-                    b.Property<decimal>("TaxAmount")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("tax_amount");
-
-                    b.Property<int?>("TaxId")
-                        .HasColumnType("int")
-                        .HasColumnName("tax_id");
-
-                    b.Property<decimal>("TaxPercentage")
-                        .HasColumnType("decimal(5,2)")
-                        .HasColumnName("tax_percentage");
-
-                    b.Property<decimal>("Total")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("total");
+                        .HasColumnType("bit");
 
                     b.Property<int>("UserId")
-                        .HasColumnType("int")
-                        .HasColumnName("user_id");
+                        .HasColumnType("int");
 
                     b.HasKey("PurchaseId");
 
-                    b.HasIndex("ClientId");
-
-                    b.HasIndex("TaxId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("purchase", (string)null);
+                    b.ToTable("Purchases");
                 });
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Quote", b =>
@@ -628,78 +594,29 @@ namespace SyncroBE.Infrastructure.Migrations
                 {
                     b.Property<int>("SaleDetailId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("sale_detail_id");
+                        .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SaleDetailId"));
 
                     b.Property<decimal>("LineTotal")
                         .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("line_total")
-                        .HasComputedColumnSql("[quantity] * [unit_price]", true);
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductId")
-                        .HasColumnType("int")
-                        .HasColumnName("product_id");
-
-                    b.Property<string>("ProductName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
-                        .HasColumnName("product_name");
+                        .HasColumnType("int");
 
                     b.Property<int>("PurchaseId")
-                        .HasColumnType("int")
-                        .HasColumnName("purchase_id");
+                        .HasColumnType("int");
 
                     b.Property<int>("Quantity")
-                        .HasColumnType("int")
-                        .HasColumnName("quantity");
+                        .HasColumnType("int");
 
                     b.Property<decimal>("UnitPrice")
-                        .HasColumnType("decimal(18,2)")
-                        .HasColumnName("unit_price");
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("SaleDetailId");
 
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("PurchaseId");
-
-                    b.ToTable("sale_detail", (string)null);
-                });
-
-            modelBuilder.Entity("SyncroBE.Domain.Entities.Tax", b =>
-                {
-                    b.Property<int>("TaxId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("tax_id");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TaxId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("created_at");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit")
-                        .HasColumnName("is_active");
-
-                    b.Property<decimal>("Percentage")
-                        .HasColumnType("decimal(5,2)")
-                        .HasColumnName("percentage");
-
-                    b.Property<string>("TaxName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("tax_name");
-
-                    b.HasKey("TaxId");
-
-                    b.ToTable("tax", (string)null);
+                    b.ToTable("SaleDetails");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -715,12 +632,6 @@ namespace SyncroBE.Infrastructure.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("FailedLoginAttempts")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0)
-                        .HasColumnName("failed_login_attempts");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
@@ -728,10 +639,6 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime2")
                         .HasColumnName("last_login");
-
-                    b.Property<DateTime?>("LockoutEnd")
-                        .HasColumnType("datetime2")
-                        .HasColumnName("lockout_end");
 
                     b.Property<bool>("MustChangePassword")
                         .HasColumnType("bit")
@@ -864,32 +771,6 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Distributor");
                 });
 
-            modelBuilder.Entity("SyncroBE.Domain.Entities.Purchase", b =>
-                {
-                    b.HasOne("SyncroBE.Domain.Entities.Client", "Client")
-                        .WithMany("Purchases")
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SyncroBE.Domain.Entities.Tax", "Tax")
-                        .WithMany("Purchases")
-                        .HasForeignKey("TaxId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("User", "User")
-                        .WithMany("Purchases")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Client");
-
-                    b.Navigation("Tax");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("SyncroBE.Domain.Entities.Quote", b =>
                 {
                     b.HasOne("SyncroBE.Domain.Entities.Client", "Client")
@@ -935,25 +816,6 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Quote");
                 });
 
-            modelBuilder.Entity("SyncroBE.Domain.Entities.SaleDetail", b =>
-                {
-                    b.HasOne("SyncroBE.Domain.Entities.Product", "Product")
-                        .WithMany("SaleDetails")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("SyncroBE.Domain.Entities.Purchase", "Purchase")
-                        .WithMany("SaleDetails")
-                        .HasForeignKey("PurchaseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("Purchase");
-                });
-
             modelBuilder.Entity("SyncroBE.Domain.Entities.Canton", b =>
                 {
                     b.Navigation("Clients");
@@ -964,8 +826,6 @@ namespace SyncroBE.Infrastructure.Migrations
             modelBuilder.Entity("SyncroBE.Domain.Entities.Client", b =>
                 {
                     b.Navigation("Location");
-
-                    b.Navigation("Purchases");
 
                     b.Navigation("Quotes");
                 });
@@ -988,8 +848,6 @@ namespace SyncroBE.Infrastructure.Migrations
             modelBuilder.Entity("SyncroBE.Domain.Entities.Product", b =>
                 {
                     b.Navigation("QuoteDetails");
-
-                    b.Navigation("SaleDetails");
                 });
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Province", b =>
@@ -999,25 +857,13 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Clients");
                 });
 
-            modelBuilder.Entity("SyncroBE.Domain.Entities.Purchase", b =>
-                {
-                    b.Navigation("SaleDetails");
-                });
-
             modelBuilder.Entity("SyncroBE.Domain.Entities.Quote", b =>
                 {
                     b.Navigation("QuoteDetails");
                 });
 
-            modelBuilder.Entity("SyncroBE.Domain.Entities.Tax", b =>
-                {
-                    b.Navigation("Purchases");
-                });
-
             modelBuilder.Entity("User", b =>
                 {
-                    b.Navigation("Purchases");
-
                     b.Navigation("Quotes");
                 });
 #pragma warning restore 612, 618

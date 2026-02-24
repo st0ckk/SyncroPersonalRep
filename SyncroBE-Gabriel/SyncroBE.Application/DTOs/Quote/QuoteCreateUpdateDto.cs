@@ -8,25 +8,20 @@ using System.Threading.Tasks;
 
 namespace SyncroBE.Application.DTOs.Quote
 {
-    public class QuoteDto
+    public class QuoteCreateUpdateDto
     {
-        public int QuoteId { get; set; }
         public string ClientId { get; set; }
-        public int UserId { get; set; }
         public int? DiscountId { get; set; }
         public string QuoteNumber { get; set; }
-        public string? ClientName { get; set; } = null;
-        public decimal QuoteTotal { get; set; }
-        public bool QuoteIsValid { get; set; }
-        public string UserName { get; set; }
+        public string QuoteCustomer { get; set; }
         public DateTime QuoteValidTil { get; set; }
         public string QuoteStatus { get; set; }
-        public DateTime QuoteDate { get; set; }
-        public string? QuoteRemarks { get; set; }
-        public string? QuoteConditions { get; set; }
-        public bool QuoteDiscountApplied { get; set; }
+        public string QuoteRemarks { get; set; }
+        public string QuoteConditions { get; set; }
+        public bool QuoteDiscountApplied { get; set; } = false;
         public int QuoteDiscountPercentage { get; set; }
         public string QuoteDiscountReason { get; set; }
-        public List<QuoteDetailDto>? QuoteDetails { get; set; }
+
+        public List<QuoteDetailCreateUpdateDto> QuoteDetails { get; set; }
     }
 }

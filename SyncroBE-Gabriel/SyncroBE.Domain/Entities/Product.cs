@@ -15,6 +15,8 @@
         public bool IsActive { get; set; } = true;
 
         public virtual ICollection<QuoteDetail> QuoteDetails { get; set; }
+
+        public virtual ICollection<SaleDetail> SaleDetails { get; set; }
     }
 }
 
