@@ -8,6 +8,7 @@ using SyncroBE.Domain.Entities;
 
 namespace SyncroBE.Application.Interfaces
 {
+    //**
     public interface IProductRepository
     {
         Task<IEnumerable<Product>> GetAllAsync();

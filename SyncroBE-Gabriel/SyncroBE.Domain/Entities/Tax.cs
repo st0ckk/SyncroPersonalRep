@@ -14,6 +14,10 @@ namespace SyncroBE.Domain.Entities
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // ── Hacienda tax codes ──
+        public string? HaciendaTaxCode { get; set; }             // 01=IVA, 02=ISC, 99=Otro
+        public string? HaciendaIvaRateCode { get; set; }         // 01-08 per Hacienda rate table
+
         //Navegacion
         public IEnumerable<Purchase> Purchases { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.DTOs;
@@ -18,11 +18,16 @@ public class StockController : ControllerBase
 {
     private readonly IProductRepository _repository;
     private readonly SyncroDbContext _context;
-    
-    public StockController(IProductRepository repository, SyncroDbContext context)
+    private readonly IHaciendaLookupService _haciendaLookup;
+
+    public StockController(
+        IProductRepository repository,
+        SyncroDbContext context,
+        IHaciendaLookupService haciendaLookup)
     {
         _repository = repository;
         _context = context;
+        _haciendaLookup = haciendaLookup;
     }
 
     // get para mostrar todos los productos activos
@@ -31,18 +36,7 @@ public class StockController : ControllerBase
     {
         var products = await _repository.GetAllAsync();
 
-        var result = products.Select(p => new ProductDto
-        {
-            ProductId = p.ProductId,
-            DistributorId = p.DistributorId,
-            DistributorName = p.Distributor.Name,
-            ProductName = p.ProductName,
-            ProductType = p.ProductType,
-            ProductPrice = p.ProductPrice,
-            ProductQuantity = p.ProductQuantity,
-            IsActive = p.IsActive
-        });
-
+        var result = products.Select(p => MapToDto(p));
 
         return Ok(result);
     }
@@ -53,16 +47,7 @@ public class StockController : ControllerBase
     {
         var products = await _repository.GetInactiveAsync();
 
-        var result = products.Select(p => new ProductDto
-        {
-            ProductId = p.ProductId,
-            DistributorId = p.DistributorId,
-            ProductName = p.ProductName,
-            ProductType = p.ProductType,
-            ProductPrice = p.ProductPrice,
-            ProductQuantity = p.ProductQuantity,
-            IsActive = p.IsActive
-        });
+        var result = products.Select(p => MapToDto(p));
 
         return Ok(result);
     }
@@ -74,18 +59,7 @@ public class StockController : ControllerBase
         var p = await _repository.GetByIdAsync(id);
         if (p is null) return NotFound();
 
-        var dto = new ProductDto
-        {
-            ProductId = p.ProductId,
-            DistributorId = p.DistributorId,
-            ProductName = p.ProductName,
-            ProductType = p.ProductType,
-            ProductPrice = p.ProductPrice,
-            ProductQuantity = p.ProductQuantity,
-            IsActive = p.IsActive
-        };
-
-        return Ok(dto);
+        return Ok(MapToDto(p));
     }
 
     [HttpPost]
@@ -108,7 +82,12 @@ public class StockController : ControllerBase
             ProductName = dto.ProductName,
             ProductType = dto.ProductType,
             ProductPrice = dto.ProductPrice,
+            PulperoPrice = dto.PulperoPrice,
+            ExtranjeroPrice = dto.ExtranjeroPrice,
+            RuteroPrice = dto.RuteroPrice,
             ProductQuantity = dto.ProductQuantity,
+            CabysCode = dto.CabysCode,
+            IsService = dto.IsService,
             IsActive = true
         };
 
@@ -149,8 +128,13 @@ public class StockController : ControllerBase
         product.ProductName = dto.ProductName;
         product.ProductType = dto.ProductType;
         product.ProductPrice = dto.ProductPrice;
+        product.PulperoPrice = dto.PulperoPrice;
+        product.ExtranjeroPrice = dto.ExtranjeroPrice;
+        product.RuteroPrice = dto.RuteroPrice;
         product.ProductQuantity = dto.ProductQuantity;
         product.IsActive = dto.IsActive;
+        product.CabysCode = dto.CabysCode;
+        product.IsService = dto.IsService;
 
         await _repository.UpdateAsync(product);
 
@@ -182,17 +166,7 @@ public class StockController : ControllerBase
     {
         var products = await _repository.FilterAsync(name, distributorId);
 
-        var result = products.Select(p => new ProductDto
-        {
-            ProductId = p.ProductId,
-            DistributorId = p.DistributorId,
-            DistributorName = p.Distributor.Name,
-            ProductName = p.ProductName,
-            ProductType = p.ProductType,
-            ProductPrice = p.ProductPrice,
-            ProductQuantity = p.ProductQuantity,
-            IsActive = p.IsActive
-        });
+        var result = products.Select(p => MapToDto(p));
 
         return Ok(result);
     }
@@ -211,8 +185,13 @@ public class StockController : ControllerBase
             ProductName = p.ProductName,
             ProductType = p.ProductType,
             ProductPrice = p.ProductPrice,
+            PulperoPrice = p.PulperoPrice,
+            ExtranjeroPrice = p.ExtranjeroPrice,
+            RuteroPrice = p.RuteroPrice,
             ProductQuantity = p.ProductQuantity,
-            IsActive = p.IsActive
+            IsActive = p.IsActive,
+            CabysCode = p.CabysCode,
+            IsService = p.IsService
         });
 
         return Ok(result);
@@ -235,5 +214,32 @@ public class StockController : ControllerBase
         return NoContent();
     }
 
+    // CABYS lookup from Hacienda API
+    [HttpGet("cabys")]
+    public async Task<IActionResult> SearchCabys([FromQuery] string q, [FromQuery] int top = 10)
+    {
+        if (string.IsNullOrWhiteSpace(q))
+            return Ok(new { total = 0, cantidad = 0, cabys = Array.Empty<object>() });
 
+        var result = await _haciendaLookup.SearchCabysAsync(q, top);
+        return Ok(result);
+    }
+
+    // ── Helper ──
+    private static ProductDto MapToDto(Product p) => new()
+    {
+        ProductId = p.ProductId,
+        DistributorId = p.DistributorId,
+        DistributorName = p.Distributor?.Name ?? "",
+        ProductName = p.ProductName,
+        ProductType = p.ProductType,
+        ProductPrice = p.ProductPrice,
+        PulperoPrice = p.PulperoPrice,
+        ExtranjeroPrice = p.ExtranjeroPrice,
+        RuteroPrice = p.RuteroPrice,
+        ProductQuantity = p.ProductQuantity,
+        IsActive = p.IsActive,
+        CabysCode = p.CabysCode,
+        IsService = p.IsService
+    };
 }

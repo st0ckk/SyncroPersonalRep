@@ -363,4 +363,10 @@ MigrationBackup/
 FodyWeavers.xsd
 appsettings.json
 appsettings.Development.json
-appsettings.Development.json
+
+# Certificates and keys (electronic invoice)
+*.p12
+*.pfx
+*.pem
+*.key
+Certificates/

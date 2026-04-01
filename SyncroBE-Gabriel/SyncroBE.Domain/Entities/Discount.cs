@@ -13,5 +13,7 @@ namespace SyncroBE.Domain.Entities
         public int DiscountPercentage { get; set; }
         public bool IsActive { get; set; }
         public IEnumerable<Quote> Quotes { get; set; }
+
+        public IEnumerable<Purchase> Purchases { get; set; }
     }
 }

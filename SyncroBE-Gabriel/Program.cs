@@ -2,24 +2,21 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using SyncroBE.Application.Configuration;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Infrastructure.Auth;
 using SyncroBE.Infrastructure.Data;
 using SyncroBE.Infrastructure.Repositories;
 using SyncroBE.Infrastructure.Services;
+using SyncroBE.Infrastructure.Services.Hacienda;
 using System.Text;
 
-/*
- Clase principal de arranque de la aplicación
- Autenticación y autorización con JWT + tabla users propia
-*/
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-
 // =========================
-// DB CONTEXT (TU BD REAL)
+// DB CONTEXT
 // =========================
 builder.Services.AddDbContext<SyncroDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
@@ -37,11 +34,43 @@ builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
 builder.Services.AddScoped<IAuditService, NoOpAuditService>();
 builder.Services.AddScoped<IVacationService, VacationService>();
+builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+builder.Services.AddScoped<IRouteRepository, RouteRepository>();
+builder.Services.AddScoped<IRouteTemplateRepository, RouteTemplateRepository>();
+builder.Services.AddScoped<IClientAccountRepository, ClientAccountRepository>();
 
 // =========================
 // PDF SERVICE
 // =========================
 builder.Services.AddScoped<IPdfService, PdfService>();
+
+// =========================
+// HACIENDA (Electronic Invoice)
+// =========================
+builder.Services.Configure<HaciendaSettings>(
+    builder.Configuration.GetSection(HaciendaSettings.SectionName));
+
+builder.Services.AddHttpClient<IHaciendaTokenService, HaciendaTokenService>();
+builder.Services.AddHttpClient<IHaciendaApiService, HaciendaApiService>();
+builder.Services.AddHttpClient<IHaciendaLookupService, HaciendaLookupService>();
+builder.Services.AddScoped<IClaveGeneratorService, ClaveGeneratorService>();
+builder.Services.AddScoped<IConsecutiveService, ConsecutiveService>();
+builder.Services.AddScoped<IXmlGeneratorService, XmlGeneratorService>();
+builder.Services.AddScoped<IXmlSignerService, XmlSignerService>();
+builder.Services.AddScoped<IElectronicInvoiceService, ElectronicInvoiceService>();
+builder.Services.AddScoped<IInvoiceValidationService, InvoiceValidationService>();
+
+// =========================
+// HACIENDA STATUS POLLING (Background Service)
+// =========================
+builder.Services.AddHostedService<HaciendaStatusPollingService>();
+
+// =========================
+// EMAIL SERVICE
+// =========================
+builder.Services.Configure<EmailSettings>(
+    builder.Configuration.GetSection(EmailSettings.SectionName));
+builder.Services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
 
 // =========================
 // JWT SERVICE
@@ -56,7 +85,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
     {
         policy
-            .WithOrigins("http://localhost:52802", "http://localhost:5173")
+            .WithOrigins(
+                "http://localhost:5173",                 // Vite dev
+                "http://localhost:52802",                // optional local
+                "https://syncro-fe-3dfd.vercel.app"       // Vercel prod
+            )
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -110,7 +143,6 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 
-    // JWT en Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -139,25 +171,30 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+var uploadsDirectory = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads", "route-deliveries");
+Directory.CreateDirectory(uploadsDirectory);
+
+// =========================
+// SEED
+// =========================
 await SyncroBE.API.Seed.UserSeeder.SeedAsync(app.Services);
 
 // =========================
 // MIDDLEWARE
 // =========================
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Swagger always enabled (useful for testing on Render)
+app.UseSwagger();
+app.UseSwaggerUI();
+
 
 app.UseRouting();
-app.UseCors("AllowReact");
+app.UseStaticFiles();
 
-app.UseAuthentication();   
-app.UseAuthorization();    
+app.UseCors("AllowReact");  
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
-
-
 
 app.Run();

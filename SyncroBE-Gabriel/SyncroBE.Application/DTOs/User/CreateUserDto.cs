@@ -13,6 +13,8 @@ namespace SyncroBE.Application.DTOs.User
         public required string UserEmail { get; set; }
         public required string Password { get; set; }
         public required string UserRole { get; set; }
+        public string? Telefono { get; set; }
+        public string? TelefonoPersonal { get; set; }
     }
 }
 

@@ -71,10 +71,6 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(u => u.User)
                 .AsQueryable();
 
-            Debug.WriteLine("This is a start:" + startDate);
-            Debug.WriteLine("This is a end:" + endDate);
-            Debug.WriteLine(DateTime.Now);
-
             //Verificar rango de fechas
             if (startDate != null && endDate != null)
             {

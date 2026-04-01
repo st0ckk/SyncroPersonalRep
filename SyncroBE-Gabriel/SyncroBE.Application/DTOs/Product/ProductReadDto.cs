@@ -12,8 +12,13 @@ namespace SyncroBE.Application.DTOs.Product
         public string ProductName { get; set; } = null!;
         public string? ProductType { get; set; }
         public decimal ProductPrice { get; set; }
+        public decimal? PulperoPrice { get; set; }
+        public decimal? ExtranjeroPrice { get; set; }
+        public decimal? RuteroPrice { get; set; }
         public int ProductQuantity { get; set; }
         public bool IsActive { get; set; }
+        public string? CabysCode { get; set; }
+        public bool IsService { get; set; }
     }
 }
 

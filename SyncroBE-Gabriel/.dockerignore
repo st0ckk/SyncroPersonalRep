@@ -1,0 +1,13 @@
+**/.git
+**/.vs
+**/.vscode
+**/.claude
+**/bin
+**/obj
+**/Debug
+**/Release
+**/*.user
+**/*.suo
+**/node_modules
+**/.env
+**/appsettings.Development.json

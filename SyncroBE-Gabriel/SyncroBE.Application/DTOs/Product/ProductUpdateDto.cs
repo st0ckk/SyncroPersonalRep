@@ -23,10 +23,17 @@ namespace SyncroBE.Application.DTOs.Product
         [Required]
         public decimal ProductPrice { get; set; }
 
+        public decimal? PulperoPrice { get; set; }
+        public decimal? ExtranjeroPrice { get; set; }
+        public decimal? RuteroPrice { get; set; }
+
         [Required]
         public int ProductQuantity { get; set; }
 
         public bool IsActive { get; set; }
+
+        public string? CabysCode { get; set; }
+        public bool IsService { get; set; }
     }
 }
 

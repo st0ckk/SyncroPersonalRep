@@ -12,17 +12,15 @@ public class User
     public bool IsActive { get; set; }
     public bool MustChangePassword { get; set; }
     public DateTime CreatedAt { get; set; }
-
     [Column("updated_at")]
     public DateTime? UpdatedAt { get; set; }
-
     public DateTime? LastLogin { get; set; }
-
-    // para lo de bloqueo por intentos fallidos 
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
 
     public ICollection<Quote> Quotes { get; set; }
-
+    public string? Telefono { get; set; }
+    public string? TelefonoPersonal { get; set; }
     public ICollection<Purchase> Purchases { get; set; }
+    public ICollection<ClientAccount> ClientAccounts { get; set;}
 }

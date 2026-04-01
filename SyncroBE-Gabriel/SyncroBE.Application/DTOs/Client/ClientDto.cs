@@ -13,10 +13,11 @@ namespace SyncroBE.Application.DTOs.Client
         public string? ClientEmail { get; set; }
         public string? ClientPhone { get; set; }
         public string? ClientType { get; set; }
+        public string? HaciendaIdType { get; set; }
+        public string? ClientElectronicInvoice { get; set; }
+        public string? ActivityCode { get; set; }
 
         public bool IsActive { get; set; }
-
-        public string? ClientElectronicInvoice { get; set; }
 
         public int? ProvinceCode { get; set; }
         public string? ProvinceName { get; set; }
@@ -28,6 +29,15 @@ namespace SyncroBE.Application.DTOs.Client
         public string? DistrictName { get; set; }
 
         public string? ExactAddress { get; set; }
+
+        // Exoneration fields
+        public string? ExonerationDocType { get; set; }
+        public string? ExonerationDocNumber { get; set; }
+        public string? ExonerationInstitutionCode { get; set; }
+        public string? ExonerationInstitutionName { get; set; }
+        public DateTime? ExonerationDate { get; set; }
+        public int? ExonerationPercentage { get; set; }
+
         public ClientLocationDto? Location { get; set; }
     }
 

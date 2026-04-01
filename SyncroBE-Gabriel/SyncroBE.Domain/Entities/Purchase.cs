@@ -12,6 +12,10 @@ namespace SyncroBE.Domain.Entities
         public int PurchaseId { get; set; }
         public int UserId { get; set; }
         public string ClientId { get; set; } = null!;       // ← cambiado de int a string
+        public int? DiscountId { get; set; }
+        public int RouteId { get; set; }
+        public int? ClientAccountId { get; set; }
+        public string PurchaseOrderNumber { get; set; }
         public DateTime PurchaseDate { get; set; } = DateTime.UtcNow;
         public bool PurchasePaid { get; set; }
 
@@ -24,10 +28,23 @@ namespace SyncroBE.Domain.Entities
 
         public bool IsActive { get; set; } = true;           // para soft-delete (HU4)
 
+        //  ── Descuento a nivel de compra ──
+
+        public bool PurchaseDiscountApplied { get; set; } = false;
+        public int PurchaseDiscountPercentage { get; set; }
+        public string PurchaseDiscountReason { get; set; }
+
+        //  ── Descuento a nivel de compra ──
+        public string PurchasePaymentMethod { get; set; }
+
         // ── Navegación ──
         public User User { get; set; } = null!;
         public Client Client { get; set; } = null!;
         public Tax? Tax { get; set; }
         public ICollection<SaleDetail> SaleDetails { get; set; } = new List<SaleDetail>();
+        public Discount? Discount { get; set; }
+        public DeliveryRoute Route { get; set; }
+        public ClientAccount ClientAccount { get; set; }
+        public Invoice? Invoice { get; set; }
     }
 }

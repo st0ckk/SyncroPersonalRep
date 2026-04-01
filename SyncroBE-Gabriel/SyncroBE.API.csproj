@@ -44,4 +44,8 @@
 	  <ProjectReference Include="SyncroBE.Infrastructure\SyncroBE.Infrastructure.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Certificates\" />
+	</ItemGroup>
+
 </Project>

@@ -13,10 +13,12 @@ namespace SyncroBE.API.Controllers
     public class ClientController : ControllerBase
     {
         private readonly IClientRepository _repository;
+        private readonly IHaciendaLookupService _lookupService;
 
-        public ClientController(IClientRepository repository)
+        public ClientController(IClientRepository repository, IHaciendaLookupService lookupService)
         {
             _repository = repository;
+            _lookupService = lookupService;
         }
 
         // get para mostrar todos los clientes activos
@@ -46,10 +48,19 @@ namespace SyncroBE.API.Controllers
                 ClientEmail = dto.ClientEmail,
                 ClientPhone = dto.ClientPhone,
                 ClientType = dto.ClientType,
+                HaciendaIdType = dto.HaciendaIdType,
+                ClientElectronicInvoice = dto.ClientElectronicInvoice,
+                ActivityCode = dto.ActivityCode,
                 ProvinceCode = dto.ProvinceCode,
                 CantonCode = dto.CantonCode,
                 DistrictCode = dto.DistrictCode,
                 ExactAddress = dto.ExactAddress,
+                ExonerationDocType = dto.ExonerationDocType,
+                ExonerationDocNumber = dto.ExonerationDocNumber,
+                ExonerationInstitutionCode = dto.ExonerationInstitutionCode,
+                ExonerationInstitutionName = dto.ExonerationInstitutionName,
+                ExonerationDate = dto.ExonerationDate,
+                ExonerationPercentage = dto.ExonerationPercentage,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
                 Location = dto.Location == null ? null : new ClientLocation
@@ -82,6 +93,16 @@ namespace SyncroBE.API.Controllers
             return Ok();
         }
 
+        // Consulta contribuyente en Hacienda por número de identificación
+        [HttpGet("hacienda-lookup/{identificacion}")]
+        public async Task<IActionResult> HaciendaLookup(string identificacion)
+        {
+            var result = await _lookupService.LookupContributorAsync(identificacion);
+            if (result == null)
+                return NotFound(new { message = "No se encontró el contribuyente en Hacienda" });
+            return Ok(result);
+        }
+
         // mapper interno, no expuesto en la API   
         // convierte una lista de Client a una lista de ClientDto
         // considerar implementar en los demas a futuro
@@ -94,7 +115,9 @@ namespace SyncroBE.API.Controllers
                 ClientEmail = c.ClientEmail,
                 ClientPhone = c.ClientPhone,
                 ClientType = c.ClientType,
+                HaciendaIdType = c.HaciendaIdType,
                 ClientElectronicInvoice = c.ClientElectronicInvoice,
+                ActivityCode = c.ActivityCode,
                 IsActive = c.IsActive,
 
                 ProvinceCode = c.ProvinceCode,
@@ -113,6 +136,13 @@ namespace SyncroBE.API.Controllers
                     : null,
 
                 ExactAddress = c.ExactAddress,
+
+                ExonerationDocType = c.ExonerationDocType,
+                ExonerationDocNumber = c.ExonerationDocNumber,
+                ExonerationInstitutionCode = c.ExonerationInstitutionCode,
+                ExonerationInstitutionName = c.ExonerationInstitutionName,
+                ExonerationDate = c.ExonerationDate,
+                ExonerationPercentage = c.ExonerationPercentage,
 
                 Location = c.Location == null
                     ? null
@@ -138,10 +168,19 @@ namespace SyncroBE.API.Controllers
             client.ClientEmail = dto.ClientEmail;
             client.ClientPhone = dto.ClientPhone;
             client.ClientType = dto.ClientType;
+            client.HaciendaIdType = dto.HaciendaIdType;
+            client.ClientElectronicInvoice = dto.ClientElectronicInvoice;
+            client.ActivityCode = dto.ActivityCode;
             client.ProvinceCode = dto.ProvinceCode;
             client.CantonCode = dto.CantonCode;
             client.DistrictCode = dto.DistrictCode;
             client.ExactAddress = dto.ExactAddress;
+            client.ExonerationDocType = dto.ExonerationDocType;
+            client.ExonerationDocNumber = dto.ExonerationDocNumber;
+            client.ExonerationInstitutionCode = dto.ExonerationInstitutionCode;
+            client.ExonerationInstitutionName = dto.ExonerationInstitutionName;
+            client.ExonerationDate = dto.ExonerationDate;
+            client.ExonerationPercentage = dto.ExonerationPercentage;
             client.UpdatedAt = DateTime.UtcNow;
 
             if (dto.Location != null)
@@ -172,7 +211,9 @@ namespace SyncroBE.API.Controllers
                 ClientEmail = client.ClientEmail,
                 ClientPhone = client.ClientPhone,
                 ClientType = client.ClientType,
+                HaciendaIdType = client.HaciendaIdType,
                 ClientElectronicInvoice = client.ClientElectronicInvoice,
+                ActivityCode = client.ActivityCode,
                 IsActive = client.IsActive,
 
                 ProvinceCode = client.ProvinceCode,
@@ -185,6 +226,13 @@ namespace SyncroBE.API.Controllers
                 DistrictName = client.District?.DistrictName,
 
                 ExactAddress = client.ExactAddress,
+
+                ExonerationDocType = client.ExonerationDocType,
+                ExonerationDocNumber = client.ExonerationDocNumber,
+                ExonerationInstitutionCode = client.ExonerationInstitutionCode,
+                ExonerationInstitutionName = client.ExonerationInstitutionName,
+                ExonerationDate = client.ExonerationDate,
+                ExonerationPercentage = client.ExonerationPercentage,
 
                 Location = client.Location == null
                     ? null
