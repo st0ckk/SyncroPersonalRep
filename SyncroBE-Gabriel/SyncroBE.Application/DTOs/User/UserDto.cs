@@ -16,5 +16,6 @@
         public int FailedLoginAttempts { get; set; }
         public DateTime? LockoutEnd { get; set; }
         public bool IsLocked { get; set; }
+        public bool TwoFactorEnabled { get; set; }
     }
 }

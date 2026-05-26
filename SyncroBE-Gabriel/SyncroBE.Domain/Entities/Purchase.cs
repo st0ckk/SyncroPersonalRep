@@ -15,6 +15,7 @@ namespace SyncroBE.Domain.Entities
         public int? DiscountId { get; set; }
         public int RouteId { get; set; }
         public int? ClientAccountId { get; set; }
+        public int CashRegisterId { get; set; }
         public string PurchaseOrderNumber { get; set; }
         public DateTime PurchaseDate { get; set; } = DateTime.UtcNow;
         public bool PurchasePaid { get; set; }
@@ -45,6 +46,8 @@ namespace SyncroBE.Domain.Entities
         public Discount? Discount { get; set; }
         public DeliveryRoute Route { get; set; }
         public ClientAccount ClientAccount { get; set; }
-        public Invoice? Invoice { get; set; }
+        public ICollection<CashRegisterMovement> CashRegisterMovements { get; set; }
+        public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+        public CashRegister Register { get; set; }
     }
 }

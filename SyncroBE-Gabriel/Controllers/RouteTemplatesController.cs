@@ -8,7 +8,7 @@ namespace SyncroBE.API.Controllers
 {
     [ApiController]
     [Route("api/route-templates")]
-    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class RouteTemplatesController : ControllerBase
     {
         private readonly IRouteTemplateRepository _routeTemplateRepository;

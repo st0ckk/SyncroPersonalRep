@@ -23,6 +23,7 @@ namespace SyncroBE.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(r => r.DriverUser)
                 .Include(r => r.Stops)
+                    .ThenInclude(s => s.Client)
                 .AsQueryable();
 
 
@@ -54,6 +55,7 @@ namespace SyncroBE.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(r => r.DriverUser)
                 .Include(r => r.Stops)
+                    .ThenInclude(s => s.Client)
                 .FirstOrDefaultAsync(r => r.RouteId == id);
 
             return entity == null ? null : Map(entity);
@@ -122,6 +124,7 @@ namespace SyncroBE.Infrastructure.Repositories
                 .AsNoTracking()
                 .Include(r => r.DriverUser)
                 .Include(r => r.Stops)
+                    .ThenInclude(s => s.Client)
                 .Include(r => r.Purchases)
                 .ThenInclude(c => c.Client)
                 .Include(r => r.Purchases)
@@ -173,7 +176,8 @@ namespace SyncroBE.Infrastructure.Repositories
                         Notes = s.Notes,
                         DeliveryPhotoPath = s.DeliveryPhotoPath,
                         DeliveryPhotoUploadedAt = s.DeliveryPhotoUploadedAt,
-                        DeliveredAt = s.DeliveredAt
+                        DeliveredAt = s.DeliveredAt,
+                        ClientPhone = s.Client?.ClientPhone
                     })
                     .ToList() ?? new List<RouteStopDto>(),
                 Purchases = route.Purchases?.Select(p => new SaleDto

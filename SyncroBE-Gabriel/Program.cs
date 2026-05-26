@@ -11,8 +11,6 @@ using SyncroBE.Infrastructure.Services;
 using SyncroBE.Infrastructure.Services.Hacienda;
 using System.Text;
 
-
-
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================
@@ -32,12 +30,19 @@ builder.Services.AddScoped<IQuoteRepository, QuoteRepository>();
 builder.Services.AddScoped<IAssetRepository, AssetRepository>();
 builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
 builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
-builder.Services.AddScoped<IAuditService, NoOpAuditService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IVacationService, VacationService>();
 builder.Services.AddScoped<ISaleRepository, SaleRepository>();
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IRouteTemplateRepository, RouteTemplateRepository>();
 builder.Services.AddScoped<IClientAccountRepository, ClientAccountRepository>();
+builder.Services.AddScoped<ICashRegisterRepository, CashRegisterRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+
+// =========================
+// DRIVER LOCATION (in-memory, sin persistencia)
+// =========================
+builder.Services.AddSingleton<IDriverLocationStore, DriverLocationStore>();
 
 // =========================
 // PDF SERVICE
@@ -45,7 +50,7 @@ builder.Services.AddScoped<IClientAccountRepository, ClientAccountRepository>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 
 // =========================
-// HACIENDA (Electronic Invoice)
+// HACIENDA
 // =========================
 builder.Services.Configure<HaciendaSettings>(
     builder.Configuration.GetSection(HaciendaSettings.SectionName));
@@ -61,21 +66,22 @@ builder.Services.AddScoped<IElectronicInvoiceService, ElectronicInvoiceService>(
 builder.Services.AddScoped<IInvoiceValidationService, InvoiceValidationService>();
 
 // =========================
-// HACIENDA STATUS POLLING (Background Service)
+// BACKGROUND SERVICE
 // =========================
 builder.Services.AddHostedService<HaciendaStatusPollingService>();
 
 // =========================
-// EMAIL SERVICE
+// EMAIL
 // =========================
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection(EmailSettings.SectionName));
 builder.Services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
 
 // =========================
-// JWT SERVICE
+// JWT / TOTP
 // =========================
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<TotpService>();
 
 // =========================
 // CORS
@@ -85,18 +91,14 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReact", policy =>
     {
         policy
-            .WithOrigins(
-                "http://localhost:5173",                 // Vite dev
-                "http://localhost:52802",                // optional local
-                "https://syncro-fe-3dfd.vercel.app"       // Vercel prod
-            )
+            .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
 // =========================
-// JWT AUTHENTICATION
+// AUTH
 // =========================
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
@@ -117,7 +119,6 @@ builder.Services
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-
             ValidIssuer = jwtIssuer,
             ValidAudience = jwtAudience,
             IssuerSigningKey = new SymmetricSecurityKey(
@@ -182,19 +183,43 @@ await SyncroBE.API.Seed.UserSeeder.SeedAsync(app.Services);
 // =========================
 // MIDDLEWARE
 // =========================
-// Swagger always enabled (useful for testing on Render)
+
+// Manejo global de excepciones — captura cualquier excepción no controlada
+// y devuelve un JSON estructurado en lugar de crashear el servidor
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var errorFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (errorFeature != null)
+        {
+            var ex = errorFeature.Error;
+            var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Excepción no controlada: {Message}", ex.Message);
+
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = ex.Message
+            });
+        }
+    });
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
 app.UseRouting();
-app.UseStaticFiles();
 
-app.UseCors("AllowReact");  
+app.UseCors("AllowReact");
+
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
+app.MapControllers().RequireCors("AllowReact");
 
 app.Run();

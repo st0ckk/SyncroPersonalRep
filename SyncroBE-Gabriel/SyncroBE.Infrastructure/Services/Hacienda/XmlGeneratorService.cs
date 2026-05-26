@@ -95,9 +95,9 @@ namespace SyncroBE.Infrastructure.Services.Hacienda
 
             // Add reference to original document (after ResumenFactura per v4.4 schema)
             root.Add(new XElement(ns + "InformacionReferencia",
-                new XElement(ns + "TipoDoc", "01"),  // FE
+                new XElement(ns + "TipoDocIR", "01"),  // FE - NotaCreditoElectronica uses TipoDocIR
                 new XElement(ns + "Numero", originalInvoice.Clave),
-                new XElement(ns + "FechaEmision", originalInvoice.EmissionDate?.ToString("yyyy-MM-ddTHH:mm:ss-06:00")),
+                new XElement(ns + "FechaEmisionIR", originalInvoice.EmissionDate?.ToString("yyyy-MM-ddTHH:mm:ss-06:00")),
                 new XElement(ns + "Codigo", creditNote.ReferenceCode ?? "01"),
                 new XElement(ns + "Razon", creditNote.ReferenceReason ?? "Anulación de documento")));
 

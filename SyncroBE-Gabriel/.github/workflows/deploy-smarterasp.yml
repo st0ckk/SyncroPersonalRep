@@ -1,0 +1,57 @@
+name: Deploy SyncroBE to SmarterASP.NET
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:    # allow manual trigger from the Actions tab
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  PROJECT_PATH: 'SyncroBE.API.csproj'
+  PUBLISH_DIR: ${{ github.workspace }}/publish
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest   # MSDeploy ships with Windows runners
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.PROJECT_PATH }}
+
+      - name: Build (Release)
+        run: dotnet build ${{ env.PROJECT_PATH }} --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish ${{ env.PROJECT_PATH }} --configuration Release --no-build --output ${{ env.PUBLISH_DIR }}
+
+      # ----- Optional: apply EF Core migrations against the live DB -----
+      # NOTE: SmarterASP SQL firewall typically blocks GitHub Actions IPs, so this
+      # step is disabled. Run migrations manually from your local machine instead:
+      #   dotnet ef database update --project SyncroBE.Infrastructure --startup-project SyncroBE.API --connection "<your_conn_string>"
+      # - name: Install dotnet-ef
+      #   run: dotnet tool install --global dotnet-ef
+      #
+      # - name: Apply EF Core migrations
+      #   run: dotnet ef database update --project SyncroBE.Infrastructure --startup-project SyncroBE.API --connection "${{ secrets.DB_CONNECTION_STRING }}"
+
+      # ----- Deploy to SmarterASP.NET via Web Deploy (MSDeploy) -----
+      - name: Deploy via MSDeploy
+        shell: cmd
+        env:
+          MSDEPLOY_SITE: ${{ secrets.WEBSITE_NAME }}
+          MSDEPLOY_URL: ${{ secrets.SERVER_COMPUTER_NAME }}
+          MSDEPLOY_USER: ${{ secrets.SERVER_USERNAME }}
+          MSDEPLOY_PASS: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          set "MSDEPLOY=C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          if not exist "%MSDEPLOY%" set "MSDEPLOY=C:\Program Files (x86)\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          "%MSDEPLOY%" -verb:sync -source:contentPath="%PUBLISH_DIR%" -dest:contentPath="%MSDEPLOY_SITE%",ComputerName="%MSDEPLOY_URL%",UserName="%MSDEPLOY_USER%",Password="%MSDEPLOY_PASS%",AuthType="Basic" -enableRule:AppOffline -enableRule:DoNotDeleteRule -allowUntrusted

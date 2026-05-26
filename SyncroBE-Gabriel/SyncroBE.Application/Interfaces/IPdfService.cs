@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SyncroBE.Application.DTOs.CashRegister;
 
 namespace SyncroBE.Application.Interfaces
 {
@@ -16,5 +17,6 @@ namespace SyncroBE.Application.Interfaces
         Task<string> GenerateInvoicePdfHtml(Invoice invoice, CompanyConfig emisor, Purchase purchase, Client client);
 
         Task<string> GenerateAccountMovementReportPdfCopy(ClientAccountDto account, DateTime? startDate, DateTime? endDate);
+        Task<string> GenerateRegisterSummaryPdfCopy(CashRegisterDto register, DateTime? startDate, DateTime? endDate);
     }
 }

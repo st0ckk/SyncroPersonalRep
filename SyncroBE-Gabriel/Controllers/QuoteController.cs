@@ -21,7 +21,7 @@ namespace SyncroBE.API.Controllers
 {
     [Route("api/quotes")]
     [ApiController]
-    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class QuoteController : ControllerBase
     {
         private readonly IQuoteRepository _repository;

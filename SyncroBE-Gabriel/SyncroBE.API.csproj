@@ -45,7 +45,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Certificates\" />
+	  <Content Include="Certificates\**\*.p12">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	    <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </Content>
 	</ItemGroup>
 
 </Project>

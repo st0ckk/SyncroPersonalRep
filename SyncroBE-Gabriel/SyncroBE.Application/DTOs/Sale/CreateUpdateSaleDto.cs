@@ -19,6 +19,7 @@ namespace SyncroBE.Application.DTOs.Sale
         public int? DiscountId { get; set; }
         public int RouteId { get; set; }
         public int? ClientAccountId { get; set; }
+        public int CashRegisterId { get; set; }
         public bool IsActive { get; set; }
         public bool PurchaseDiscountApplied { get; set; }
         public int PurchaseDiscountPercentage { get; set; }

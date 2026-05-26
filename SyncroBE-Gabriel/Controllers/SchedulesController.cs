@@ -9,7 +9,7 @@ namespace SyncroBE.API.Controllers
 {
     [ApiController]
     [Route("api/schedules")]
-    [Authorize(Roles = "SuperUsuario,Administrador")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class SchedulesController : ControllerBase
     {
         private readonly IScheduleRepository _repo;

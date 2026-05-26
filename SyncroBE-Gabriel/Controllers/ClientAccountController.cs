@@ -14,7 +14,7 @@ namespace SyncroBE.API.Controllers
 {
     [Route("api/clientaccounts")]
     [ApiController]
-    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class ClientAccountController : ControllerBase
     {
         private readonly IClientAccountRepository _repository;
@@ -94,7 +94,7 @@ namespace SyncroBE.API.Controllers
 
         //Consigue todas las cuentas de cliente que estan activas o suspendidas en base a un cliente
         [HttpGet("client")]
-        public async Task<IActionResult> GetByClient(string client)
+        public async Task<IActionResult> GetByClient(string? client)
         {
             var data = await _repository.GetByClient(client);
             var result = data.Select(ca => new ClientAccountDto

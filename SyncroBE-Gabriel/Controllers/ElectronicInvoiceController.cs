@@ -2,6 +2,8 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PuppeteerSharp;
+using PuppeteerSharp.Media;
 using SyncroBE.Application.DTOs.ElectronicInvoice;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
@@ -287,7 +289,7 @@ namespace SyncroBE.Controllers
         }
 
         /// <summary>
-        /// Send an existing invoice to the client's email.
+        /// Send an existing invoice to the client's email with PDF attached.
         /// </summary>
         [HttpPost("{invoiceId}/send-email")]
         public async Task<IActionResult> SendEmail(int invoiceId, [FromQuery] string? overrideEmail = null)
@@ -305,7 +307,15 @@ namespace SyncroBE.Controllers
                 if (string.IsNullOrEmpty(clientEmail))
                     return BadRequest(new { error = "El cliente no tiene correo electrónico configurado" });
 
-                await _emailService.SendInvoiceEmailAsync(invoice, clientEmail);
+                var pdfBytes = await GenerateInvoicePdfBytes(invoiceId);
+                if (pdfBytes != null)
+                {
+                    await _emailService.SendInvoiceEmailWithPdfAsync(invoice, clientEmail, pdfBytes);
+                }
+                else
+                {
+                    await _emailService.SendInvoiceEmailAsync(invoice, clientEmail);
+                }
 
                 return Ok(new { message = $"Factura enviada a {clientEmail}" });
             }
@@ -327,7 +337,7 @@ namespace SyncroBE.Controllers
                 var invoice = await _invoiceService.GenerateAndSendAsync(
                     request.PurchaseId, request.DocumentType);
 
-                // Attempt to email — don't fail the whole request if email fails
+                // Attempt to email with PDF — don't fail the whole request if email fails
                 try
                 {
                     var purchase = await _db.Purchases
@@ -336,7 +346,16 @@ namespace SyncroBE.Controllers
 
                     if (!string.IsNullOrEmpty(purchase.Client?.ClientEmail))
                     {
-                        await _emailService.SendInvoiceEmailAsync(invoice, purchase.Client.ClientEmail);
+                        var pdfBytes = await GenerateInvoicePdfBytes(invoice.InvoiceId);
+                        if (pdfBytes != null)
+                        {
+                            await _emailService.SendInvoiceEmailWithPdfAsync(
+                                invoice, purchase.Client.ClientEmail, pdfBytes);
+                        }
+                        else
+                        {
+                            await _emailService.SendInvoiceEmailAsync(invoice, purchase.Client.ClientEmail);
+                        }
                     }
                 }
                 catch (Exception emailEx)
@@ -390,6 +409,115 @@ namespace SyncroBE.Controllers
             {
                 return StatusCode(500, new { error = "Error al generar PDF", detail = ex.Message });
             }
+        }
+
+        /// <summary>
+        /// Download the invoice as a PDF file.
+        /// </summary>
+        [HttpGet("{invoiceId}/download-pdf")]
+        public async Task<IActionResult> DownloadPdf(int invoiceId)
+        {
+            try
+            {
+                var pdfBytes = await GenerateInvoicePdfBytes(invoiceId);
+                if (pdfBytes == null) return NotFound();
+
+                var invoice = await _db.Invoices.FindAsync(invoiceId);
+                var docTypeName = invoice!.DocumentType switch
+                {
+                    "01" => "Factura Electrónica",
+                    "03" => "Nota de Crédito",
+                    "04" => "Tiquete Electrónico",
+                    _ => "Comprobante"
+                };
+
+                return File(pdfBytes, "application/pdf", $"{docTypeName} - {invoice.ConsecutiveNumber}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al generar PDF", detail = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Cancel an accepted invoice by generating a Nota de Crédito (document type 03, reference code 01 = anula).
+        /// </summary>
+        [HttpPost("{invoiceId}/cancel")]
+        public async Task<ActionResult<ElectronicInvoiceDto>> Cancel(
+            int invoiceId, [FromBody] CancelInvoiceRequestDto request)
+        {
+            try
+            {
+                var invoice = await _db.Invoices.FindAsync(invoiceId);
+                if (invoice == null) return NotFound();
+
+                if (invoice.HaciendaStatus != "accepted")
+                    return BadRequest(new { error = "Solo se pueden anular facturas aceptadas por Hacienda" });
+
+                if (invoice.DocumentType == "03")
+                    return BadRequest(new { error = "No se puede anular una Nota de Crédito" });
+
+                // Pre-validate
+                var validationErrors = await _validationService.ValidateForCreditNoteAsync(invoiceId);
+                var errors = validationErrors.Where(e => e.Severity == "error").ToList();
+                if (errors.Any())
+                {
+                    return BadRequest(new
+                    {
+                        error = "Validación fallida. No se puede anular la factura.",
+                        validationErrors = errors
+                    });
+                }
+
+                var creditNote = await _invoiceService.GenerateCreditNoteAsync(invoiceId, request.Reason);
+
+                return Ok(new
+                {
+                    message = "Factura anulada exitosamente. Se generó una Nota de Crédito.",
+                    creditNote = MapToDto(creditNote),
+                    originalInvoiceId = invoiceId
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Error al anular factura", detail = ex.Message });
+            }
+        }
+
+        // ── Helpers ──
+
+        private async Task<byte[]?> GenerateInvoicePdfBytes(int invoiceId)
+        {
+            var invoice = await _db.Invoices
+                .Include(i => i.Purchase)
+                    .ThenInclude(p => p.Client)
+                .Include(i => i.Purchase)
+                    .ThenInclude(p => p.SaleDetails)
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId);
+
+            if (invoice == null) return null;
+
+            var emisor = await _db.CompanyConfigs.FirstOrDefaultAsync(c => c.IsActive);
+            if (emisor == null) return null;
+
+            var html = await _pdfService.GenerateInvoicePdfHtml(
+                invoice, emisor, invoice.Purchase, invoice.Purchase.Client);
+
+            var browserFetch = new BrowserFetcher();
+            await browserFetch.DownloadAsync();
+
+            using var browser = await Puppeteer.LaunchAsync(new LaunchOptions { Headless = true });
+            using var page = await browser.NewPageAsync();
+            await page.SetContentAsync(html);
+            var pdfStream = await page.PdfStreamAsync(new PdfOptions { Format = PaperFormat.A4 });
+
+            using var ms = new MemoryStream();
+            await pdfStream.CopyToAsync(ms);
+            return ms.ToArray();
         }
 
         // ── Mapping ──

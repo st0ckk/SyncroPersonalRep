@@ -79,6 +79,57 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.ToTable("asset", (string)null);
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.AuditLog", b =>
+                {
+                    b.Property<long>("LogId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("log_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LogId"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("action");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("details");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)")
+                        .HasColumnName("ip_address");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("LogId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("audit_log", (string)null);
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Canton", b =>
                 {
                     b.Property<int>("CantonCode")
@@ -104,11 +155,132 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.ToTable("canton", (string)null);
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CashRegister", b =>
+                {
+                    b.Property<int>("CashRegisterId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("cashregister_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CashRegisterId"));
+
+                    b.Property<decimal?>("CashRegisterAmountDifference")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("cashregister_amountdifference");
+
+                    b.Property<DateTime?>("CashRegisterClosingDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("cashregister_closingdate");
+
+                    b.Property<string>("CashRegisterDifferenceReason")
+                        .HasColumnType("varchar(max)")
+                        .HasColumnName("cashregister_differencereason");
+
+                    b.Property<decimal?>("CashRegisterExpectedAmount")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("cashregister_expectedamount");
+
+                    b.Property<string>("CashRegisterNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("cashregister_number");
+
+                    b.Property<decimal>("CashRegisterOpeningAmount")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("cashregister_openingamount");
+
+                    b.Property<DateTime>("CashRegisterOpeningDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("cashregister_openingdate");
+
+                    b.Property<decimal?>("CashRegisterReportedAmount")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("cashregister_reportedamount");
+
+                    b.Property<string>("CashRegisterStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("cashregister_status");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("CashRegisterId");
+
+                    b.HasIndex("CashRegisterNumber")
+                        .HasDatabaseName("cashregister_number");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("cash_registers", (string)null);
+                });
+
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CashRegisterMovement", b =>
+                {
+                    b.Property<int>("CashRegisterMovementId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("cashregistermovement_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CashRegisterMovementId"));
+
+                    b.Property<int>("CashRegisterId")
+                        .HasColumnType("int")
+                        .HasColumnName("cashregister_id");
+
+                    b.Property<decimal>("CashRegisterMovementAmount")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("cashregistermovement_amount");
+
+                    b.Property<DateTime>("CashRegisterMovementDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("cashregistermovement_date");
+
+                    b.Property<string>("CashRegisterMovementDescription")
+                        .HasColumnType("varchar(max)")
+                        .HasColumnName("cashregistermovement_description");
+
+                    b.Property<bool>("CashRegisterMovementManual")
+                        .HasColumnType("bit")
+                        .HasColumnName("cashregistermovement_manual");
+
+                    b.Property<string>("CashRegisterMovementType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("cashregistermovement_type");
+
+                    b.Property<int?>("PurchaseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("CashRegisterMovementId");
+
+                    b.HasIndex("CashRegisterId");
+
+                    b.HasIndex("PurchaseId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("cash_registermovements", (string)null);
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Client", b =>
                 {
                     b.Property<string>("ClientId")
                         .HasColumnType("nvarchar(450)")
                         .HasColumnName("client_id");
+
+                    b.Property<string>("ActivityCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)")
+                        .HasColumnName("activity_code");
 
                     b.Property<int?>("CantonCode")
                         .HasColumnType("int")
@@ -154,6 +326,39 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Property<string>("ExactAddress")
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("exact_address");
+
+                    b.Property<DateTime?>("ExonerationDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("exoneration_date");
+
+                    b.Property<string>("ExonerationDocNumber")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)")
+                        .HasColumnName("exoneration_doc_number");
+
+                    b.Property<string>("ExonerationDocType")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("exoneration_doc_type");
+
+                    b.Property<string>("ExonerationInstitutionCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("exoneration_institution_code");
+
+                    b.Property<string>("ExonerationInstitutionName")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)")
+                        .HasColumnName("exoneration_institution_name");
+
+                    b.Property<int?>("ExonerationPercentage")
+                        .HasColumnType("int")
+                        .HasColumnName("exoneration_percentage");
+
+                    b.Property<string>("HaciendaIdType")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("hacienda_id_type");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -332,6 +537,142 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.ToTable("client_location", (string)null);
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CompanyConfig", b =>
+                {
+                    b.Property<int>("ConfigId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("config_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConfigId"));
+
+                    b.Property<string>("ActivityCode")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)")
+                        .HasColumnName("activity_code");
+
+                    b.Property<string>("BranchNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("001")
+                        .HasColumnName("branch_number");
+
+                    b.Property<int>("CantonCode")
+                        .HasColumnType("int")
+                        .HasColumnName("canton_code");
+
+                    b.Property<string>("CommercialName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("commercial_name");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("company_name");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("DistrictCode")
+                        .HasColumnType("int")
+                        .HasColumnName("district_code");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)")
+                        .HasColumnName("email");
+
+                    b.Property<string>("Environment")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasDefaultValue("sandbox")
+                        .HasColumnName("environment");
+
+                    b.Property<string>("FaxCountryCode")
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasColumnName("fax_country_code");
+
+                    b.Property<string>("FaxNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("fax_number");
+
+                    b.Property<string>("IdNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("id_number");
+
+                    b.Property<string>("IdType")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("id_type");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_active");
+
+                    b.Property<int?>("NeighborhoodCode")
+                        .HasColumnType("int")
+                        .HasColumnName("neighborhood_code");
+
+                    b.Property<string>("OtherAddress")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)")
+                        .HasColumnName("other_address");
+
+                    b.Property<string>("PhoneCountryCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("506")
+                        .HasColumnName("phone_country_code");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("phone_number");
+
+                    b.Property<int>("ProvinceCode")
+                        .HasColumnType("int")
+                        .HasColumnName("province_code");
+
+                    b.Property<string>("TerminalNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)")
+                        .HasDefaultValue("00001")
+                        .HasColumnName("terminal_number");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("ConfigId");
+
+                    b.HasIndex("CantonCode");
+
+                    b.HasIndex("DistrictCode");
+
+                    b.HasIndex("ProvinceCode");
+
+                    b.ToTable("company_config", (string)null);
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.DeliveryRoute", b =>
                 {
                     b.Property<int>("RouteId")
@@ -433,6 +774,19 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("delivered_at");
+
+                    b.Property<string>("DeliveryPhotoPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("delivery_photo_path");
+
+                    b.Property<DateTime?>("DeliveryPhotoUploadedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("delivery_photo_uploaded_at");
 
                     b.Property<int?>("EstimatedTravelMinutesFromPrevious")
                         .HasColumnType("int")
@@ -634,6 +988,199 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.ToTable("employee_schedule", (string)null);
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.HaciendaConsecutive", b =>
+                {
+                    b.Property<int>("ConsecutiveId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("consecutive_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsecutiveId"));
+
+                    b.Property<string>("BranchNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("001")
+                        .HasColumnName("branch_number");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("document_type");
+
+                    b.Property<long>("LastNumber")
+                        .HasColumnType("bigint")
+                        .HasColumnName("last_number");
+
+                    b.Property<string>("TerminalNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)")
+                        .HasDefaultValue("00001")
+                        .HasColumnName("terminal_number");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("ConsecutiveId");
+
+                    b.HasIndex("DocumentType", "BranchNumber", "TerminalNumber")
+                        .IsUnique()
+                        .HasDatabaseName("uq_hacienda_consecutive");
+
+                    b.ToTable("hacienda_consecutive", (string)null);
+                });
+
+            modelBuilder.Entity("SyncroBE.Domain.Entities.Invoice", b =>
+                {
+                    b.Property<int>("InvoiceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("invoice_id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InvoiceId"));
+
+                    b.Property<string>("ActivityCode")
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)")
+                        .HasColumnName("activity_code");
+
+                    b.Property<string>("Clave")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("clave");
+
+                    b.Property<string>("ConsecutiveNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("consecutive_number");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("CurrencyCode")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasDefaultValue("CRC")
+                        .HasColumnName("currency_code");
+
+                    b.Property<string>("DocumentType")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasDefaultValue("01")
+                        .HasColumnName("document_type");
+
+                    b.Property<string>("ElectronicInvoice")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("electronic_invoice");
+
+                    b.Property<DateTime?>("EmissionDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("emission_date");
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,5)")
+                        .HasDefaultValue(1m)
+                        .HasColumnName("exchange_rate");
+
+                    b.Property<string>("HaciendaMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("hacienda_message");
+
+                    b.Property<string>("HaciendaStatus")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("pending")
+                        .HasColumnName("hacienda_status");
+
+                    b.Property<DateTime?>("InvoiceDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("invoice_date");
+
+                    b.Property<decimal>("InvoiceTotal")
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("invoice_total");
+
+                    b.Property<string>("PaymentMethodCode")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasDefaultValue("01")
+                        .HasColumnName("payment_method_code");
+
+                    b.Property<int>("PurchaseId")
+                        .HasColumnType("int")
+                        .HasColumnName("purchase_id");
+
+                    b.Property<string>("ReferenceCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("reference_code");
+
+                    b.Property<string>("ReferenceDocumentClave")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("reference_document_clave");
+
+                    b.Property<string>("ReferenceReason")
+                        .HasMaxLength(180)
+                        .HasColumnType("nvarchar(180)")
+                        .HasColumnName("reference_reason");
+
+                    b.Property<DateTime?>("ResponseAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("response_at");
+
+                    b.Property<string>("SaleCondition")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasDefaultValue("01")
+                        .HasColumnName("sale_condition");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("sent_at");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<string>("XmlResponse")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("xml_response");
+
+                    b.Property<string>("XmlSigned")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("xml_signed");
+
+                    b.HasKey("InvoiceId");
+
+                    b.HasIndex("Clave")
+                        .IsUnique()
+                        .HasDatabaseName("uq_invoice_clave")
+                        .HasFilter("[clave] IS NOT NULL");
+
+                    b.HasIndex("HaciendaStatus")
+                        .HasDatabaseName("ix_invoice_hacienda_status");
+
+                    b.HasIndex("PurchaseId");
+
+                    b.ToTable("invoice", (string)null);
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Product", b =>
                 {
                     b.Property<int>("ProductId")
@@ -643,13 +1190,28 @@ namespace SyncroBE.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProductId"));
 
+                    b.Property<string>("CabysCode")
+                        .HasMaxLength(13)
+                        .HasColumnType("nvarchar(13)")
+                        .HasColumnName("cabys_code");
+
                     b.Property<int>("DistributorId")
                         .HasColumnType("int")
                         .HasColumnName("distributor_id");
 
+                    b.Property<decimal?>("ExtranjeroPrice")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("extranjero_price");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsService")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_service");
 
                     b.Property<string>("ProductName")
                         .IsRequired()
@@ -669,6 +1231,14 @@ namespace SyncroBE.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)")
                         .HasColumnName("product_type");
+
+                    b.Property<decimal?>("PulperoPrice")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("pulpero_price");
+
+                    b.Property<decimal?>("RuteroPrice")
+                        .HasColumnType("decimal(10,2)")
+                        .HasColumnName("rutero_price");
 
                     b.HasKey("ProductId");
 
@@ -704,6 +1274,10 @@ namespace SyncroBE.Infrastructure.Migrations
                         .HasColumnName("purchase_id");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PurchaseId"));
+
+                    b.Property<int>("CashRegisterId")
+                        .HasColumnType("int")
+                        .HasColumnName("cashregister_id");
 
                     b.Property<int?>("ClientAccountId")
                         .HasColumnType("int")
@@ -783,6 +1357,8 @@ namespace SyncroBE.Infrastructure.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("PurchaseId");
+
+                    b.HasIndex("CashRegisterId");
 
                     b.HasIndex("ClientAccountId");
 
@@ -1087,6 +1663,50 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.ToTable("sale_detail", (string)null);
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.ScreenPermission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("GrantedBy")
+                        .HasColumnType("int")
+                        .HasColumnName("granted_by");
+
+                    b.Property<string>("Role")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("ScreenKey")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("screen_key");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GrantedBy")
+                        .HasDatabaseName("ix_screen_permissions_granted_by");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_screen_permissions_user")
+                        .HasFilter("[user_id] IS NOT NULL");
+
+                    b.ToTable("screen_permissions", (string)null);
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Tax", b =>
                 {
                     b.Property<int>("TaxId")
@@ -1099,6 +1719,16 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("HaciendaIvaRateCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("hacienda_iva_rate_code");
+
+                    b.Property<string>("HaciendaTaxCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)")
+                        .HasColumnName("hacienda_tax_code");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit")
@@ -1290,6 +1920,17 @@ namespace SyncroBE.Infrastructure.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("telefono_personal");
 
+                    b.Property<bool>("TwoFactorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false)
+                        .HasColumnName("two_factor_enabled");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("two_factor_secret");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("updated_at");
@@ -1333,6 +1974,17 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.AuditLog", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Canton", b =>
                 {
                     b.HasOne("SyncroBE.Domain.Entities.Province", "Province")
@@ -1342,6 +1994,43 @@ namespace SyncroBE.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Province");
+                });
+
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CashRegister", b =>
+                {
+                    b.HasOne("User", "User")
+                        .WithMany("CashRegisters")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CashRegisterMovement", b =>
+                {
+                    b.HasOne("SyncroBE.Domain.Entities.CashRegister", "CashRegister")
+                        .WithMany("Movements")
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SyncroBE.Domain.Entities.Purchase", "Purchase")
+                        .WithMany("CashRegisterMovements")
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("User", "User")
+                        .WithMany("CashRegisterMovements")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CashRegister");
+
+                    b.Navigation("Purchase");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Client", b =>
@@ -1409,6 +2098,33 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Client");
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CompanyConfig", b =>
+                {
+                    b.HasOne("SyncroBE.Domain.Entities.Canton", "Canton")
+                        .WithMany()
+                        .HasForeignKey("CantonCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SyncroBE.Domain.Entities.District", "District")
+                        .WithMany()
+                        .HasForeignKey("DistrictCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SyncroBE.Domain.Entities.Province", "Province")
+                        .WithMany()
+                        .HasForeignKey("ProvinceCode")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Canton");
+
+                    b.Navigation("District");
+
+                    b.Navigation("Province");
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.DeliveryRoute", b =>
                 {
                     b.HasOne("User", "DriverUser")
@@ -1461,6 +2177,17 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.Invoice", b =>
+                {
+                    b.HasOne("SyncroBE.Domain.Entities.Purchase", "Purchase")
+                        .WithMany("Invoices")
+                        .HasForeignKey("PurchaseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Purchase");
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.Product", b =>
                 {
                     b.HasOne("SyncroBE.Domain.Entities.Distributor", "Distributor")
@@ -1474,6 +2201,12 @@ namespace SyncroBE.Infrastructure.Migrations
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Purchase", b =>
                 {
+                    b.HasOne("SyncroBE.Domain.Entities.CashRegister", "Register")
+                        .WithMany()
+                        .HasForeignKey("CashRegisterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("SyncroBE.Domain.Entities.ClientAccount", "ClientAccount")
                         .WithMany("Purchases")
                         .HasForeignKey("ClientAccountId")
@@ -1512,6 +2245,8 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("ClientAccount");
 
                     b.Navigation("Discount");
+
+                    b.Navigation("Register");
 
                     b.Navigation("Route");
 
@@ -1613,6 +2348,24 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Purchase");
                 });
 
+            modelBuilder.Entity("SyncroBE.Domain.Entities.ScreenPermission", b =>
+                {
+                    b.HasOne("User", "GrantedByUser")
+                        .WithMany()
+                        .HasForeignKey("GrantedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("GrantedByUser");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SyncroBE.Domain.Entities.UserVacationBalance", b =>
                 {
                     b.HasOne("User", "User")
@@ -1654,6 +2407,11 @@ namespace SyncroBE.Infrastructure.Migrations
                     b.Navigation("Clients");
 
                     b.Navigation("Districts");
+                });
+
+            modelBuilder.Entity("SyncroBE.Domain.Entities.CashRegister", b =>
+                {
+                    b.Navigation("Movements");
                 });
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Client", b =>
@@ -1714,6 +2472,10 @@ namespace SyncroBE.Infrastructure.Migrations
 
             modelBuilder.Entity("SyncroBE.Domain.Entities.Purchase", b =>
                 {
+                    b.Navigation("CashRegisterMovements");
+
+                    b.Navigation("Invoices");
+
                     b.Navigation("SaleDetails");
                 });
 
@@ -1734,6 +2496,10 @@ namespace SyncroBE.Infrastructure.Migrations
 
             modelBuilder.Entity("User", b =>
                 {
+                    b.Navigation("CashRegisterMovements");
+
+                    b.Navigation("CashRegisters");
+
                     b.Navigation("ClientAccounts");
 
                     b.Navigation("Purchases");

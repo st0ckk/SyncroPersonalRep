@@ -74,7 +74,7 @@ public class StockController : ControllerBase
             .AnyAsync(d => d.DistributorId == dto.DistributorId);
 
         if (!distributorExists)
-            return BadRequest("invalid distributorid");
+            return BadRequest(new { message = "El ID del distribuidor no es válido." });
 
         var product = new Product
         {
@@ -91,13 +91,19 @@ public class StockController : ControllerBase
             IsActive = true
         };
 
-        await _repository.AddAsync(product);
-
-        return CreatedAtAction(
-            nameof(GetById),
-            new { id = product.ProductId },
-            product.ProductId
-        );
+        try
+        {
+            await _repository.AddAsync(product);
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = product.ProductId },
+                product.ProductId
+            );
+        }
+        catch (DbUpdateException)
+        {
+            return StatusCode(500, new { message = "Error al crear el producto. Por favor intente de nuevo." });
+        }
     }
 
 
@@ -108,7 +114,7 @@ public class StockController : ControllerBase
         ProductUpdateDto dto)
     {
         if (id != dto.ProductId)
-            return BadRequest("ID mismatch");
+            return BadRequest(new { message = "El ID del producto no coincide." });
 
         if (!ModelState.IsValid)
             return ValidationProblem(ModelState);
@@ -121,7 +127,7 @@ public class StockController : ControllerBase
             .AnyAsync(d => d.DistributorId == dto.DistributorId);
 
         if (!distributorExists)
-            return BadRequest("invalid distributorid");
+            return BadRequest(new { message = "El ID del distribuidor no es válido." });
 
         // mappeo
         product.DistributorId = dto.DistributorId;
@@ -136,9 +142,15 @@ public class StockController : ControllerBase
         product.CabysCode = dto.CabysCode;
         product.IsService = dto.IsService;
 
-        await _repository.UpdateAsync(product);
-
-        return NoContent();
+        try
+        {
+            await _repository.UpdateAsync(product);
+            return NoContent();
+        }
+        catch (DbUpdateException)
+        {
+            return StatusCode(500, new { message = "Error al actualizar el producto. Por favor intente de nuevo." });
+        }
     }
 
 
@@ -146,6 +158,9 @@ public class StockController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Deactivate(int id)
     {
+        var product = await _repository.GetByIdAsync(id);
+        if (product == null) return NotFound(new { message = "Producto no encontrado." });
+
         await _repository.DeactivateAsync(id);
         return NoContent();
     }
@@ -154,6 +169,9 @@ public class StockController : ControllerBase
     [HttpPut("{id:int}/activate")]
     public async Task<IActionResult> Activate(int id)
     {
+        var product = await _repository.GetByIdAsync(id);
+        if (product == null) return NotFound(new { message = "Producto no encontrado." });
+
         await _repository.ActivateAsync(id);
         return NoContent();
     }
@@ -202,16 +220,23 @@ public class StockController : ControllerBase
     public async Task<IActionResult> AddStock(StockEntryDto dto)
     {
         if (dto.Quantity <= 0)
-            return BadRequest("quantity must be greater than 0");
+            return BadRequest(new { message = "La cantidad debe ser mayor a 0." });
 
         var product = await _context.Products.FindAsync(dto.ProductId);
         if (product == null)
             return NotFound();
 
         product.ProductQuantity += dto.Quantity;
-        await _context.SaveChangesAsync();
 
-        return NoContent();
+        try
+        {
+            await _context.SaveChangesAsync();
+            return NoContent();
+        }
+        catch (DbUpdateException)
+        {
+            return StatusCode(500, new { message = "Error al actualizar el stock. Por favor intente de nuevo." });
+        }
     }
 
     // CABYS lookup from Hacienda API

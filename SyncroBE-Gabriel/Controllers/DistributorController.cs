@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.DTOs.Distributor;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
@@ -62,7 +63,7 @@ namespace Syncro.API.Controllers
                 return BadRequest(ModelState);
 
             if (await _repository.CodeExistsAsync(dto.DistributorCode))
-                return BadRequest("distributor code already exists");
+                return BadRequest(new { message = "El código de distribuidor ya existe." });
 
             var distributor = new Distributor
             {
@@ -74,13 +75,19 @@ namespace Syncro.API.Controllers
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _repository.AddAsync(distributor);
-
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = distributor.DistributorId },
-                distributor.DistributorId
-            );
+            try
+            {
+                await _repository.AddAsync(distributor);
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = distributor.DistributorId },
+                    distributor.DistributorId
+                );
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al crear el distribuidor. Por favor intente de nuevo." });
+            }
         }
 
         // put para actualizar un distribuidor existente
@@ -94,14 +101,24 @@ namespace Syncro.API.Controllers
             if (distributor == null)
                 return NotFound();
 
+            if (distributor.DistributorCode != dto.DistributorCode &&
+                await _repository.CodeExistsAsync(dto.DistributorCode))
+                return Conflict(new { message = "El código de distribuidor ya está en uso." });
+
             distributor.DistributorCode = dto.DistributorCode;
             distributor.Name = dto.Name;
             distributor.Email = dto.Email;
             distributor.Phone = dto.Phone;
 
-            await _repository.UpdateAsync(distributor);
-
-            return NoContent();
+            try
+            {
+                await _repository.UpdateAsync(distributor);
+                return NoContent();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al actualizar el distribuidor. Por favor intente de nuevo." });
+            }
         }
 
         // delete para desactivar un distribuidor por id, esto no elimina de la base de datos
@@ -112,9 +129,15 @@ namespace Syncro.API.Controllers
             if (distributor == null)
                 return NotFound();
 
-            await _repository.DeactivateAsync(distributor);
-
-            return NoContent();
+            try
+            {
+                await _repository.DeactivateAsync(distributor);
+                return NoContent();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al desactivar el distribuidor. Por favor intente de nuevo." });
+            }
         }
 
         // get para mostrar todos los distribuidores inactivos
@@ -165,7 +188,7 @@ namespace Syncro.API.Controllers
             }
 
             if (distributor.IsActive)
-                return BadRequest("distributor already active");
+                return BadRequest(new { message = "El distribuidor ya está activo." });
 
             await _repository.ActivateAsync(distributor);
 

@@ -8,7 +8,7 @@ namespace SyncroBE.API.Controllers
 {
     [ApiController]
     [Route("api/users")]
-    [Authorize(Roles = "SuperUsuario,Administrador")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class UsersController : ControllerBase
     {
         private readonly SyncroDbContext _context;
@@ -73,7 +73,7 @@ namespace SyncroBE.API.Controllers
                 .FirstOrDefaultAsync();
 
             if (user == null)
-                return NotFound("Usuario no encontrado");
+                return NotFound(new { message = "Usuario no encontrado" });
 
             return Ok(user);
         }
@@ -82,7 +82,7 @@ namespace SyncroBE.API.Controllers
         public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.UserEmail == dto.UserEmail))
-                return BadRequest("El correo ya está registrado");
+                return Conflict(new { message = "El correo ya está registrado" });
 
             var user = new User
             {
@@ -101,10 +101,16 @@ namespace SyncroBE.API.Controllers
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            try
+            {
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = "El correo ya está registrado" });
+            }
         }
 
         [HttpPut("{id}")]
@@ -114,7 +120,7 @@ namespace SyncroBE.API.Controllers
             if (user == null) return NotFound("Usuario no encontrado");
 
             if (await _context.Users.AnyAsync(u => u.UserEmail == dto.UserEmail && u.UserId != id))
-                return BadRequest("El correo ya está en uso");
+                return Conflict(new { message = "El correo ya está en uso" });
 
             user.UserName = dto.UserName;
             user.UserLastname = dto.UserLastname;
@@ -123,37 +129,55 @@ namespace SyncroBE.API.Controllers
             user.TelefonoPersonal = dto.TelefonoPersonal;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            return Ok("Usuario actualizado correctamente");
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok("Usuario actualizado correctamente");
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = "El correo ya está en uso" });
+            }
         }
 
         [HttpPut("{id}/role")]
         public async Task<IActionResult> ChangeRole(int id, [FromBody] ChangeUserRoleDto dto)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound("Usuario no encontrado");
 
             user.UserRole = dto.UserRole;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al cambiar el rol del usuario." });
+            }
         }
 
         [HttpPut("{id}/status")]
         public async Task<IActionResult> ToggleStatus(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound("Usuario no encontrado");
 
             user.IsActive = !user.IsActive;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            return Ok();
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al cambiar el estado del usuario." });
+            }
         }
 
         [HttpPut("{id}/reset-password")]
@@ -161,7 +185,7 @@ namespace SyncroBE.API.Controllers
         {
             var user = await _context.Users.FindAsync(id);
             if (user == null)
-                return NotFound("Usuario no encontrado");
+                return NotFound(new { message = "Usuario no encontrado" });
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword("Syncro123*");
             user.MustChangePassword = true;
@@ -172,14 +196,20 @@ namespace SyncroBE.API.Controllers
 
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            return Ok(new
+            try
             {
-                message = "Contraseña restablecida correctamente.",
-                temporaryPassword = "Syncro123*",
-                mustChangePassword = true
-            });
+                await _context.SaveChangesAsync();
+                return Ok(new
+                {
+                    message = "Contraseña restablecida correctamente.",
+                    temporaryPassword = "Syncro123*",
+                    mustChangePassword = true
+                });
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al restablecer la contraseña." });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -191,9 +221,15 @@ namespace SyncroBE.API.Controllers
             user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-
-            return Ok("Usuario desactivado correctamente");
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok("Usuario desactivado correctamente");
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al desactivar el usuario." });
+            }
         }
 
         [HttpGet("me")]
@@ -204,10 +240,10 @@ namespace SyncroBE.API.Controllers
                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("No se encontró el id del usuario en el token.");
+                return Unauthorized(new { message = "No se encontró el id del usuario en el token." });
 
             if (!int.TryParse(userIdClaim, out var userId))
-                return Unauthorized("Id de usuario inválido.");
+                return Unauthorized(new { message = "Id de usuario inválido." });
 
             var now = DateTime.UtcNow;
 

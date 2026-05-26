@@ -11,5 +11,10 @@ namespace SyncroBE.Application.Interfaces
         /// Sends an invoice email to the specified address with the signed XML attached.
         /// </summary>
         Task SendInvoiceEmailAsync(Invoice invoice, string recipientEmail);
+
+        /// <summary>
+        /// Sends an invoice email with the signed XML and a PDF copy attached.
+        /// </summary>
+        Task SendInvoiceEmailWithPdfAsync(Invoice invoice, string recipientEmail, byte[] pdfBytes);
     }
 }

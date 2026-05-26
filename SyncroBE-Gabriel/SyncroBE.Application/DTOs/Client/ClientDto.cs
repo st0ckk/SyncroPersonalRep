@@ -42,4 +42,3 @@ namespace SyncroBE.Application.DTOs.Client
     }
 
 }
-

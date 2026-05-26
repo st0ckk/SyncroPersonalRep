@@ -5,6 +5,10 @@ using System.Xml;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Pkcs;
+using Org.BouncyCastle.Security;
 using SyncroBE.Application.Configuration;
 using SyncroBE.Application.Interfaces;
 
@@ -45,13 +49,53 @@ namespace SyncroBE.Infrastructure.Services.Hacienda
             if (!File.Exists(certPath))
                 throw new FileNotFoundException($"Certificate file not found: {certPath}");
 
-            var cert = new X509Certificate2(
-                certPath,
-                certPin,
-                X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet);
+            var certBytes = File.ReadAllBytes(certPath);
+            _logger.LogInformation("Loading certificate from {Path} ({Bytes} bytes)", certPath, certBytes.Length);
 
-            var rsaKey = cert.GetRSAPrivateKey()
-                ?? throw new InvalidOperationException("Certificate does not contain an RSA private key");
+            // Use BouncyCastle to parse the PKCS12 directly. This avoids the Windows
+            // crypto provider entirely, which is unreliable on shared hosting (the
+            // built-in X509CertificateLoader returns "Bad Data" on SmarterASP even when
+            // the same bytes/PIN load cleanly elsewhere).
+            X509Certificate2 cert;
+            RSA rsaKey;
+            try
+            {
+                using var ms = new MemoryStream(certBytes);
+                var pkcs12 = new Pkcs12StoreBuilder().Build();
+                pkcs12.Load(ms, (certPin ?? string.Empty).ToCharArray());
+
+                string? alias = null;
+                foreach (string a in pkcs12.Aliases)
+                {
+                    if (pkcs12.IsKeyEntry(a)) { alias = a; break; }
+                }
+                if (alias == null)
+                    throw new InvalidOperationException("PKCS12 store contains no key entries.");
+
+                var bcCert = pkcs12.GetCertificate(alias).Certificate;
+                var bcKey = pkcs12.GetKey(alias).Key;
+
+                // Build a managed X509Certificate2 from the encoded public cert (no
+                // private key needed — the SignedXml SigningKey carries the RSA).
+                cert = X509CertificateLoader.LoadCertificate(bcCert.GetEncoded());
+
+                if (bcKey is not RsaPrivateCrtKeyParameters rsaParams)
+                    throw new InvalidOperationException(
+                        $"Expected RSA private key, got {bcKey.GetType().Name}.");
+
+                var rsaParamsNet = DotNetUtilities.ToRSAParameters(rsaParams);
+                rsaKey = RSA.Create();
+                rsaKey.ImportParameters(rsaParamsNet);
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                _logger.LogError(ex, "Failed to load certificate at {Path} ({Bytes} bytes). PIN length: {PinLen}",
+                    certPath, certBytes.Length, certPin?.Length ?? 0);
+                throw new CryptographicException(
+                    $"Failed to load Hacienda certificate at '{certPath}' ({certBytes.Length} bytes, " +
+                    $"PIN length={certPin?.Length ?? 0}). " +
+                    $"Verify the file is a valid .p12 and the PIN is correct. Inner: {ex.Message}", ex);
+            }
 
             // Load the XML document
             var xmlDoc = new XmlDocument { PreserveWhitespace = true };

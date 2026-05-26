@@ -17,10 +17,15 @@ public class User
     public DateTime? LastLogin { get; set; }
     public int FailedLoginAttempts { get; set; }
     public DateTime? LockoutEnd { get; set; }
+    public bool TwoFactorEnabled { get; set; }
+    public string? TwoFactorSecret { get; set; }
 
     public ICollection<Quote> Quotes { get; set; }
     public string? Telefono { get; set; }
     public string? TelefonoPersonal { get; set; }
     public ICollection<Purchase> Purchases { get; set; }
     public ICollection<ClientAccount> ClientAccounts { get; set;}
+    public ICollection<CashRegister> CashRegisters { get; set; }
+    public ICollection<CashRegisterMovement> CashRegisterMovements { get; set; }
+
 }

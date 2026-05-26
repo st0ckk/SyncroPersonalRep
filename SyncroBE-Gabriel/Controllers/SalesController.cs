@@ -18,7 +18,7 @@ namespace SyncroBE.API.Controllers
 {
     [ApiController]
     [Route("api/sales")]
-    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor")]
+    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor,Chofer")]
     public class SalesController : ControllerBase
     {
         private readonly ISaleRepository _repository;
@@ -98,6 +98,7 @@ namespace SyncroBE.API.Controllers
                 DiscountId = dto.DiscountId,
                 RouteId = dto.RouteId,
                 ClientAccountId = dto.ClientAccountId,
+                CashRegisterId = dto.CashRegisterId,
                 PurchaseOrderNumber = dto.PurchaseOrderNumber,
                 PurchasePaid = dto.PurchasePaid,
                 TaxId = dto.TaxId,
@@ -124,7 +125,15 @@ namespace SyncroBE.API.Controllers
                 });
             }
 
-            await _repository.AddAsync(sale, saleDetails);
+            try
+            {
+                await _repository.AddAsync(sale, saleDetails);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Error al guardar la venta para el cliente {ClientId}", dto.ClientId);
+                return StatusCode(500, new { message = "Error al registrar la venta. Por favor intente de nuevo." });
+            }
 
             // ── Electronic Invoice (optional) ──
             ElectronicInvoiceDto? invoiceResult = null;
@@ -208,7 +217,7 @@ namespace SyncroBE.API.Controllers
                 sale.PurchaseDiscountReason = dto.PurchaseDiscountReason;
                 sale.PurchasePaymentMethod = dto.PurchasePaymentMethod;
 
-                foreach(CreateUpdateSaleDetailDto item in dto.saleDetails)
+                foreach (CreateUpdateSaleDetailDto item in dto.saleDetails)
                 {
                     saleItems.Add(new SaleDetail
                     {
@@ -229,7 +238,7 @@ namespace SyncroBE.API.Controllers
             catch (Exception ex)
             {
                 Debug.WriteLine(ex.Message);
-                return BadRequest();
+                return BadRequest(new { message = "Error al actualizar la venta. Por favor intente de nuevo." });
             }
         }
 
@@ -242,68 +251,77 @@ namespace SyncroBE.API.Controllers
             if (!int.TryParse(userIdStr, out var userId))
                 return Unauthorized("No se pudo determinar el usuario");
 
-            // Buscar la venta con sus detalles
-            var purchase = await _context.Purchases
-                .Include(p => p.SaleDetails)
-                .FirstOrDefaultAsync(p => p.PurchaseId == id && p.IsActive);
-
-            if (purchase == null)
-                return NotFound("Venta no encontrada o ya fue eliminada");
-
-            // Restaurar stock de cada producto
-            foreach (var detail in purchase.SaleDetails)
+            try
             {
-                var product = await _context.Products.FindAsync(detail.ProductId);
-                if (product != null)
+                // Buscar la venta con sus detalles
+                var purchase = await _context.Purchases
+                    .Include(p => p.SaleDetails)
+                    .FirstOrDefaultAsync(p => p.PurchaseId == id && p.IsActive);
+
+                if (purchase == null)
+                    return NotFound("Venta no encontrada o ya fue eliminada");
+
+                // Restaurar stock de cada producto
+                foreach (var detail in purchase.SaleDetails)
                 {
-                    product.ProductQuantity += detail.Quantity;
+                    var product = await _context.Products.FindAsync(detail.ProductId);
+                    if (product != null)
+                    {
+                        product.ProductQuantity += detail.Quantity;
+                    }
                 }
-            }
 
-            // Revertir conteo de compras del cliente
-            var client = await _context.Clients.FindAsync(purchase.ClientId);
-            if (client != null && client.ClientPurchases > 0)
-            {
-                client.ClientPurchases--;
-            }
-
-            // Marcar como inactiva
-            purchase.IsActive = false;
-
-            await _context.SaveChangesAsync();
-
-            // Auditoria basica (placeholder para implementacion real)
-            await _audit.LogAsync("Purchase", purchase.PurchaseId.ToString(), "SALE_DELETED",
-                userId, $"Venta #{purchase.PurchaseId} eliminada. Total: {purchase.Total:C}. Stock restaurado.");
-
-            //Si se pago con cuenta de credito, se ingresa el monto al balance
-            if (purchase.ClientAccountId != null)
-            {
-                var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
-                var oldBalanceAmount = account.ClientAccountCurrentBalance;
-                account.ClientAccountCurrentBalance -= purchase.Total;
-
-                //Se agrega el movimiento
-                var movement = new ClientAccountMovement
+                // Revertir conteo de compras del cliente
+                var client = await _context.Clients.FindAsync(purchase.ClientId);
+                if (client != null && client.ClientPurchases > 0)
                 {
-                    ClientAccountId = account.ClientAccountId,
-                    ClientAccountMovementDate = DateTime.Now,
-                    ClientAccountMovementDescription = $"Orden #{purchase.PurchaseOrderNumber}",
-                    ClientAccountMovementAmount = purchase.Total,
-                    ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
-                    ClientAccountMovementOldBalance = oldBalanceAmount,
-                    ClientAccountMovementType = "credit",
-                };
+                    client.ClientPurchases--;
+                }
 
-                _context.ClientAccountMovements.Add(movement);
+                // Marcar como inactiva
+                purchase.IsActive = false;
+
                 await _context.SaveChangesAsync();
-            }
 
-            return Ok(new
+                // Auditoria basica (placeholder para implementacion real)
+                await _audit.LogAsync("Purchase", purchase.PurchaseId.ToString(), "SALE_DELETED",
+                    userId, $"Venta #{purchase.PurchaseId} eliminada. Total: {purchase.Total:C}. Stock restaurado.");
+
+                //Si se pago con cuenta de credito, se ingresa el monto al balance
+                if (purchase.ClientAccountId != null)
+                {
+                    var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
+                    if (account != null)
+                    {
+                        account.ClientAccountCurrentBalance -= purchase.Total;
+
+                        //Se agrega el movimiento
+                        var movement = new ClientAccountMovement
+                        {
+                            ClientAccountId = account.ClientAccountId,
+                            ClientAccountMovementDate = DateTime.Now,
+                            ClientAccountMovementDescription = $"Rechazo de orden - Orden #{purchase.PurchaseOrderNumber}",
+                            ClientAccountMovementAmount = purchase.Total,
+                            ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
+                            ClientAccountMovementType = "Credito",
+                        };
+
+                        _context.ClientAccountMovements.Add(movement);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                return Ok(new
+                {
+                    message = $"Venta #{purchase.PurchaseId} eliminada exitosamente. Inventario restaurado.",
+                    purchaseId = purchase.PurchaseId
+                });
+            }
+            catch (DbUpdateException ex)
             {
-                message = $"Venta #{purchase.PurchaseId} eliminada exitosamente. Inventario restaurado.",
-                purchaseId = purchase.PurchaseId
-            });
+                _logger.LogError(ex, "Error al eliminar la venta {PurchaseId}", id);
+                return StatusCode(500, new { message = "Error al eliminar la venta. Por favor intente de nuevo." });
+            }
         }
 
         // ── Helper: Map Purchase → SaleDto ──
@@ -316,6 +334,7 @@ namespace SyncroBE.API.Controllers
                 DiscountId = p.DiscountId,
                 RouteId = p.RouteId,
                 ClientAccountId = p.ClientAccountId,
+                CashRegisterId = p.CashRegisterId,
                 ClientName = p.Client.ClientName,
                 UserName = p.User.UserName + " " + (p.User.UserLastname ?? ""),
                 PurchaseOrderNumber = p.PurchaseOrderNumber,
@@ -332,11 +351,11 @@ namespace SyncroBE.API.Controllers
                 PurchaseDiscountReason = p.PurchaseDiscountReason,
                 PurchasePaymentMethod = p.PurchasePaymentMethod,
 
-                // Electronic invoice info
-                InvoiceId = p.Invoice?.InvoiceId,
-                InvoiceClave = p.Invoice?.Clave,
-                InvoiceHaciendaStatus = p.Invoice?.HaciendaStatus,
-                InvoiceConsecutiveNumber = p.Invoice?.ConsecutiveNumber,
+                // Electronic invoice info (primary invoice, not credit notes)
+                InvoiceId = p.Invoices.Where(i => i.DocumentType != "03").OrderByDescending(i => i.CreatedAt).FirstOrDefault()?.InvoiceId,
+                InvoiceClave = p.Invoices.Where(i => i.DocumentType != "03").OrderByDescending(i => i.CreatedAt).FirstOrDefault()?.Clave,
+                InvoiceHaciendaStatus = p.Invoices.Where(i => i.DocumentType != "03").OrderByDescending(i => i.CreatedAt).FirstOrDefault()?.HaciendaStatus,
+                InvoiceConsecutiveNumber = p.Invoices.Where(i => i.DocumentType != "03").OrderByDescending(i => i.CreatedAt).FirstOrDefault()?.ConsecutiveNumber,
 
                 saleDetails = p.SaleDetails.Select(d => new SaleDetailDto
                 {

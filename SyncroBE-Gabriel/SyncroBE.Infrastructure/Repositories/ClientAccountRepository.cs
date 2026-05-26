@@ -86,7 +86,7 @@ namespace SyncroBE.Infrastructure.Repositories
             }
 
 
-            return await data.ToListAsync();
+            return await data.OrderDescending().ToListAsync();
         }
 
         public async Task<IEnumerable<ClientAccountMovement>> FilterMovementsAsync(int id, DateTime? startDate, DateTime? endDate, string searchTerm, string type)
@@ -135,7 +135,7 @@ namespace SyncroBE.Infrastructure.Repositories
             }
 
 
-            return await data.ToListAsync();
+            return await data.OrderDescending().ToListAsync();
         }
 
         public async Task<IEnumerable<ClientAccount>> GetAllActiveAsync()
@@ -146,6 +146,7 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(m => m.Movements)
                 .Where(ca => ca.ClientAccountStatus == "active" 
                 || ca.ClientAccountStatus == "suspended")
+                .OrderDescending()
                 .ToListAsync();
         }
 
@@ -155,6 +156,7 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(c => c.Client)
                 .Include(u => u.User)
                 .Include(m => m.Movements)
+                .OrderDescending()
                 .ToListAsync();
         }
 
@@ -165,6 +167,7 @@ namespace SyncroBE.Infrastructure.Repositories
                .Include(u => u.User)
                .Include(m => m.Movements)
                .Where(ca => ca.ClientId == client)
+               .OrderDescending()
                .ToListAsync();
         }
 

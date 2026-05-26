@@ -20,5 +20,7 @@
         public string? DeliveryPhotoPath { get; set; }
         public DateTime? DeliveryPhotoUploadedAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
+
+        public string? ClientPhone { get; set; }
     }
 }

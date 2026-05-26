@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.DTOs.Client;
 using SyncroBE.Application.DTOs.Distributor;
 using SyncroBE.Application.Interfaces;
@@ -41,6 +42,11 @@ namespace SyncroBE.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ClientCreateUpdateDto dto)
         {
+            // Verificar si ya existe un cliente con la misma identificación
+            var existing = await _repository.GetByIdAsync(dto.ClientId);
+            if (existing != null)
+                return Conflict(new { message = $"Ya existe un cliente con la identificación {dto.ClientId}." });
+
             var client = new Client
             {
                 ClientId = dto.ClientId,
@@ -71,8 +77,15 @@ namespace SyncroBE.API.Controllers
                 }
             };
 
-            await _repository.AddAsync(client);
-            return Ok();
+            try
+            {
+                await _repository.AddAsync(client);
+                return Ok();
+            }
+            catch (DbUpdateException)
+            {
+                return Conflict(new { message = $"Ya existe un cliente con la identificación {dto.ClientId}." });
+            }
         }
 
 
@@ -81,6 +94,9 @@ namespace SyncroBE.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Deactivate(string id)
         {
+            var client = await _repository.GetByIdAsync(id);
+            if (client == null) return NotFound(new { message = "Cliente no encontrado." });
+
             await _repository.DeactivateAsync(id);
             return Ok();
         }
@@ -89,6 +105,9 @@ namespace SyncroBE.API.Controllers
         [HttpPut("{id}/activate")]
         public async Task<IActionResult> Activate(string id)
         {
+            var client = await _repository.GetByIdAsync(id);
+            if (client == null) return NotFound(new { message = "Cliente no encontrado." });
+
             await _repository.ActivateAsync(id);
             return Ok();
         }
@@ -162,7 +181,7 @@ namespace SyncroBE.API.Controllers
         public async Task<IActionResult> Update(string id, ClientCreateUpdateDto dto)
         {
             var client = await _repository.GetByIdAsync(id);
-            if (client == null) return NotFound();
+            if (client == null) return NotFound(new { message = "Cliente no encontrado." });
 
             client.ClientName = dto.ClientName;
             client.ClientEmail = dto.ClientEmail;
@@ -191,12 +210,19 @@ namespace SyncroBE.API.Controllers
                 client.Location.Address = dto.Location.Address;
             }
 
-            await _repository.UpdateAsync(client);
-            return NoContent();
+            try
+            {
+                await _repository.UpdateAsync(client);
+                return NoContent();
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Error al actualizar el cliente. Por favor intente de nuevo." });
+            }
         }
 
         // GET: api/clients/{id}
-        // Obtener un cliente por id (para editar / detalle)
+        // Obtener un cliente por id (para editar / detalle)f
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -245,6 +271,31 @@ namespace SyncroBE.API.Controllers
             };
 
             return Ok(dto);
+        }
+
+        // Resuelve un enlace corto de Google Maps (maps.app.goo.gl) y devuelve la URL final
+        [HttpGet("resolve-maps-url")]
+        public async Task<IActionResult> ResolveMapsUrl([FromQuery] string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+                return BadRequest(new { message = "URL requerida" });
+
+            try
+            {
+                using var handler = new HttpClientHandler { AllowAutoRedirect = true, MaxAutomaticRedirections = 5 };
+                using var http = new HttpClient(handler);
+                http.Timeout = TimeSpan.FromSeconds(10);
+                http.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0");
+
+                var response = await http.GetAsync(url);
+                var finalUrl = response.RequestMessage?.RequestUri?.ToString() ?? url;
+
+                return Ok(new { finalUrl });
+            }
+            catch
+            {
+                return BadRequest(new { message = "No se pudo resolver el enlace" });
+            }
         }
 
         // aca se busca por dinamicamente los distribuidores,

@@ -8,6 +8,7 @@ namespace SyncroBE.Infrastructure.Data
         public SyncroDbContext(DbContextOptions<SyncroDbContext> options) : base(options) { }
 
         public DbSet<Product> Products => Set<Product>();
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
         public DbSet<Distributor> Distributors => Set<Distributor>();
         public DbSet<Client> Clients => Set<Client>();
         public DbSet<ClientLocation> ClientLocations => Set<ClientLocation>();
@@ -32,11 +33,19 @@ namespace SyncroBE.Infrastructure.Data
         public DbSet<RouteTemplateStop> RouteTemplateStops => Set<RouteTemplateStop>();
         public DbSet<ClientAccount> ClientAccounts => Set<ClientAccount>();
         public DbSet<ClientAccountMovement> ClientAccountMovements => Set<ClientAccountMovement>();
+        public DbSet<CashRegister> CashRegisters => Set<CashRegister>();
+        public DbSet<CashRegisterMovement> CashRegisterMovements => Set<CashRegisterMovement>();
 
         // ── Electronic Invoice (Hacienda) ──
         public DbSet<Invoice> Invoices => Set<Invoice>();
         public DbSet<CompanyConfig> CompanyConfigs => Set<CompanyConfig>();
         public DbSet<HaciendaConsecutive> HaciendaConsecutives => Set<HaciendaConsecutive>();
+
+        // ── Screen Permissions ──
+        public DbSet<ScreenPermission> ScreenPermissions => Set<ScreenPermission>();
+
+        // ── Route Incidents ──
+        public DbSet<RouteIncident> RouteIncidents => Set<RouteIncident>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -312,6 +321,8 @@ namespace SyncroBE.Infrastructure.Data
                 entity.Property(e => e.LockoutEnd).HasColumnName("lockout_end");
                 entity.Property(e => e.Telefono).HasColumnName("telefono");
                 entity.Property(e => e.TelefonoPersonal).HasColumnName("telefono_personal");
+                entity.Property(e => e.TwoFactorEnabled).HasColumnName("two_factor_enabled").HasDefaultValue(false);
+                entity.Property(e => e.TwoFactorSecret).HasColumnName("two_factor_secret").HasMaxLength(64);
             });
 
             /* QUOTES */
@@ -528,6 +539,10 @@ namespace SyncroBE.Infrastructure.Data
                       .HasColumnName("clientaccount_id")
                       .IsRequired(false);
 
+                entity.Property(e => e.CashRegisterId)
+                      .HasColumnName("cashregister_id")
+                      .IsRequired();
+
                 entity.Property(e => e.PurchaseOrderNumber)
                         .HasColumnName("purchase_ordernumber")
                         .HasMaxLength(50)
@@ -567,10 +582,10 @@ namespace SyncroBE.Infrastructure.Data
                        .HasColumnName("purchase_paymentmethod")
                        .HasColumnType("varchar(20)");
 
-            entity.HasOne(e => e.User)
-                      .WithMany(p => p.Purchases)
-                      .HasForeignKey(e => e.UserId)
-                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(e => e.User)
+                          .WithMany(p => p.Purchases)
+                          .HasForeignKey(e => e.UserId)
+                          .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Client)
                       .WithMany(p => p.Purchases)
@@ -1028,6 +1043,120 @@ namespace SyncroBE.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            /* CASH REGISTER */
+            modelBuilder.Entity<CashRegister>(entity =>
+            {
+                entity.ToTable("cash_registers");
+
+                entity.HasKey(e => e.CashRegisterId);
+
+                entity.Property(e => e.CashRegisterId).HasColumnName("cashregister_id");
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.HasIndex(e => e.CashRegisterNumber)
+                      .HasDatabaseName("cashregister_number");
+
+                entity.Property(e => e.CashRegisterOpeningAmount)
+                       .HasColumnName("cashregister_openingamount")
+                       .HasColumnType("decimal(18, 2)");
+
+                entity.Property(e => e.CashRegisterNumber)
+                      .HasColumnName("cashregister_number")
+                      .HasMaxLength(50)
+                      .IsRequired();
+
+                entity.Property(e => e.CashRegisterOpeningDate)
+                      .HasColumnType("datetime2")
+                      .HasColumnName("cashregister_openingdate")
+                      .IsRequired();
+
+                entity.Property(e => e.CashRegisterClosingDate)
+                      .HasColumnType("datetime2")
+                      .HasColumnName("cashregister_closingdate")
+                      .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterExpectedAmount)
+                       .HasColumnName("cashregister_expectedamount")
+                       .HasColumnType("decimal(18, 2)")
+                       .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterReportedAmount)
+                       .HasColumnName("cashregister_reportedamount")
+                       .HasColumnType("decimal(18, 2)")
+                       .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterAmountDifference)
+                       .HasColumnName("cashregister_amountdifference")
+                       .HasColumnType("decimal(18, 2)")
+                       .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterDifferenceReason)
+                      .HasColumnName("cashregister_differencereason")
+                      .HasColumnType("varchar(max)")
+                      .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterStatus)
+                      .HasColumnName("cashregister_status")
+                      .HasMaxLength(50)
+                      .IsRequired();
+
+                entity.HasOne(e => e.User)
+                      .WithMany(cr => cr.CashRegisters)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+            });
+
+            /* CREDIT ACCOUNT MOVEMENTS */
+            modelBuilder.Entity<CashRegisterMovement>(entity =>
+            {
+                entity.ToTable("cash_registermovements");
+
+                entity.HasKey(e => e.CashRegisterMovementId);
+
+                entity.Property(e => e.CashRegisterMovementId).HasColumnName("cashregistermovement_id");
+
+                entity.Property(e => e.CashRegisterId).HasColumnName("cashregister_id");
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.Property(e => e.CashRegisterMovementType)
+                      .HasColumnName("cashregistermovement_type")
+                      .HasMaxLength(50)
+                      .IsRequired();
+
+                entity.Property(e => e.CashRegisterMovementDescription)
+                      .HasColumnName("cashregistermovement_description")
+                      .HasColumnType("varchar(max)")
+                      .IsRequired(false);
+
+                entity.Property(e => e.CashRegisterMovementAmount)
+                       .HasColumnName("cashregistermovement_amount")
+                       .HasColumnType("decimal(18, 2)");
+
+                entity.Property(e => e.CashRegisterMovementManual).HasColumnName("cashregistermovement_manual");
+
+                entity.Property(e => e.CashRegisterMovementDate)
+                      .HasColumnType("datetime2")
+                      .HasColumnName("cashregistermovement_date")
+                      .IsRequired();
+
+                entity.HasOne(e => e.CashRegister)
+                      .WithMany(crm => crm.Movements)
+                      .HasForeignKey(e => e.CashRegisterId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.User)
+                      .WithMany(crm => crm.CashRegisterMovements)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Purchase)
+                      .WithMany(crm => crm.CashRegisterMovements)
+                      .HasForeignKey(e => e.PurchaseId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
             /* INVOICE (Electronic Invoice) */
             modelBuilder.Entity<Invoice>(entity =>
             {
@@ -1129,8 +1258,8 @@ namespace SyncroBE.Infrastructure.Data
                       .HasDatabaseName("ix_invoice_hacienda_status");
 
                 entity.HasOne(e => e.Purchase)
-                      .WithOne(p => p.Invoice)
-                      .HasForeignKey<Invoice>(e => e.PurchaseId)
+                      .WithMany(p => p.Invoices)
+                      .HasForeignKey(e => e.PurchaseId)
                       .OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -1265,6 +1394,67 @@ namespace SyncroBE.Infrastructure.Data
                       .IsUnique()
                       .HasDatabaseName("uq_hacienda_consecutive");
             });
+            /* SCREEN PERMISSIONS */
+            modelBuilder.Entity<ScreenPermission>(entity =>
+            {
+                entity.ToTable("screen_permissions");
+
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+                entity.Property(e => e.Role).HasColumnName("role").HasMaxLength(50);
+                entity.Property(e => e.ScreenKey).HasColumnName("screen_key").HasMaxLength(100).IsRequired();
+                entity.Property(e => e.GrantedBy).HasColumnName("granted_by");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.GrantedByUser)
+                      .WithMany()
+                      .HasForeignKey(e => e.GrantedBy)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            /* ROUTE INCIDENT */
+            modelBuilder.Entity<RouteIncident>(entity =>
+            {
+                entity.ToTable("route_incident");
+
+                entity.HasKey(e => e.IncidentId);
+                entity.Property(e => e.IncidentId).HasColumnName("incident_id");
+                entity.Property(e => e.RouteId).HasColumnName("route_id");
+                entity.Property(e => e.DriverUserId).HasColumnName("driver_user_id").IsRequired();
+                entity.Property(e => e.IncidentType).HasColumnName("incident_type").HasMaxLength(100).IsRequired();
+                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(1000);
+                entity.Property(e => e.OccurredAt).HasColumnName("occurred_at");
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            });
+
+            /* AUDIT LOG */
+            modelBuilder.Entity<AuditLog>(entity =>
+            {
+                entity.ToTable("audit_log");
+
+                entity.HasKey(e => e.LogId);
+
+                entity.Property(e => e.LogId).HasColumnName("log_id");
+                entity.Property(e => e.EntityType).HasColumnName("entity_type").HasMaxLength(100).IsRequired();
+                entity.Property(e => e.EntityId).HasColumnName("entity_id").HasMaxLength(50).IsRequired();
+                entity.Property(e => e.Action).HasColumnName("action").HasMaxLength(50).IsRequired();
+                entity.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+                entity.Property(e => e.Details).HasColumnName("details");
+                entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(45);
+                entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+
+                entity.HasOne(e => e.User)
+                      .WithMany()
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Restrict);
+            });
+
         }
     }
 }

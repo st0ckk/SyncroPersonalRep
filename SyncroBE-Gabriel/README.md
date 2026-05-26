@@ -301,3 +301,57 @@ VALUES (N'20260320003055_AddOldBalanceForAccounts', N'9.0.11');
 COMMIT;
 GO
 
+
+/------------------------Add Cash Register-------------------------/
+
+BEGIN TRANSACTION;
+CREATE TABLE [cash_registers] (
+    [cashregister_id] int NOT NULL IDENTITY,
+    [user_id] int NOT NULL,
+    [cashregister_openingamount] decimal(18,2) NOT NULL,
+    [cashregister_number] nvarchar(50) NOT NULL,
+    [cashregister_openingdate] datetime2 NOT NULL,
+    [cashregister_closingdate] datetime2 NULL,
+    [cashregister_expectedamount] decimal(18,2) NULL,
+    [cashregister_reportedamount] decimal(18,2) NULL,
+    [cashregister_amountdifference] decimal(18,2) NULL,
+    [cashregister_differencereason] varchar(max) NULL,
+    [cashregister_status] nvarchar(50) NOT NULL,
+    CONSTRAINT [PK_cash_registers] PRIMARY KEY ([cashregister_id]),
+    CONSTRAINT [FK_cash_registers_users_user_id] FOREIGN KEY ([user_id]) REFERENCES [users] ([user_id]) ON DELETE NO ACTION
+);
+
+CREATE TABLE [cash_registermovements] (
+    [cashregistermovement_id] int NOT NULL IDENTITY,
+    [cashregister_id] int NOT NULL,
+    [PurchaseId] int NULL,
+    [user_id] int NOT NULL,
+    [cashregistermovement_type] nvarchar(50) NOT NULL,
+    [cashregistermovement_description] varchar(max) NULL,
+    [cashregistermovement_amount] decimal(18,2) NOT NULL,
+    [cashregistermovement_manual] bit NOT NULL,
+    [cashregistermovement_date] datetime2 NOT NULL,
+    CONSTRAINT [PK_cash_registermovements] PRIMARY KEY ([cashregistermovement_id]),
+    CONSTRAINT [FK_cash_registermovements_cash_registers_cashregister_id] FOREIGN KEY ([cashregister_id]) REFERENCES [cash_registers] ([cashregister_id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_cash_registermovements_purchase_PurchaseId] FOREIGN KEY ([PurchaseId]) REFERENCES [purchase] ([purchase_id]) ON DELETE NO ACTION,
+    CONSTRAINT [FK_cash_registermovements_users_user_id] FOREIGN KEY ([user_id]) REFERENCES [users] ([user_id]) ON DELETE NO ACTION
+);
+
+CREATE INDEX [IX_cash_registermovements_cashregister_id] ON [cash_registermovements] ([cashregister_id]);
+
+CREATE INDEX [IX_cash_registermovements_PurchaseId] ON [cash_registermovements] ([PurchaseId]);
+
+CREATE INDEX [IX_cash_registermovements_user_id] ON [cash_registermovements] ([user_id]);
+
+CREATE INDEX [cashregister_number] ON [cash_registers] ([cashregister_number]);
+
+CREATE INDEX [IX_cash_registers_user_id] ON [cash_registers] ([user_id]);
+
+INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+VALUES (N'20260327051840_AddCashRegister', N'9.0.11');
+
+COMMIT;
+GO
+
+
+

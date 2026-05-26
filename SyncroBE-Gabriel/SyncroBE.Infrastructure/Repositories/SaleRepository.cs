@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿﻿using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
 using SyncroBE.Infrastructure.Data;
@@ -22,6 +22,8 @@ namespace SyncroBE.Infrastructure.Repositories
         }
         public async Task AddAsync(Purchase purchase, List<SaleDetail> saleItems)
         {
+
+            Debug.WriteLine($"Obtuve el {purchase.ClientAccountId}");
             var productIds = saleItems.Select(sd => sd.ProductId).ToList();
             var products = await _context.Products
                 .Where(p => productIds.Contains(p.ProductId))
@@ -52,24 +54,16 @@ namespace SyncroBE.Infrastructure.Repositories
             if (purchase.ClientAccountId != null)
             {
                 var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
-                var oldBalanceAmount = account.ClientAccountCurrentBalance;
-                account.ClientAccountCurrentBalance += purchase.Total;
-
-                //Se agrega el movimiento
-                var movement = new ClientAccountMovement 
-                {
-                    ClientAccountId = account.ClientAccountId,
-                    ClientAccountMovementDate = DateTime.Now,
-                    ClientAccountMovementDescription = $"Orden #{purchase.PurchaseOrderNumber}",
-                    ClientAccountMovementAmount =  purchase.Total,
-                    ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
-                    ClientAccountMovementOldBalance = oldBalanceAmount,
-                    ClientAccountMovementType = "debit",
-                };
-
-                _context.ClientAccountMovements.Add(movement);
-                await _context.SaveChangesAsync();
+                InsertIntoClientAccountMovements(purchase, account);
             }
+
+
+            //Se agrega el movimiento a su caja asignada
+            if (purchase.PurchasePaid)
+                InsertIntoRegisterMovements(purchase);
+
+            await _context.SaveChangesAsync();
+
         }
 
         public async Task<IEnumerable<Purchase>> FilterAsync(DateTime? startDate, DateTime? endDate, string searchTerm, string state, string paidState)
@@ -78,8 +72,9 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(sd => sd.SaleDetails)
                 .Include(c => c.Client)
                 .Include(u => u.User)
-                .Include(i => i.Invoice)
+                .Include(i => i.Invoices)
                 .Include(ca => ca.ClientAccount)
+                .Include(cr => cr.Register)
                 .AsQueryable();
 
             //Verificar rango de fechas
@@ -108,7 +103,8 @@ namespace SyncroBE.Infrastructure.Repositories
             }
 
             //Verificar estado(venta inactiva o activa)
-            switch(state){
+            switch (state)
+            {
                 case "active":
                     data = data.Where(p => p.IsActive);
                     break;
@@ -136,7 +132,7 @@ namespace SyncroBE.Infrastructure.Repositories
                     break;
             }
 
-            return await data.ToListAsync();
+            return await data.OrderDescending().ToListAsync();
         }
 
         public async Task<IEnumerable<Purchase>> GetAllAsync(int userId)
@@ -144,15 +140,17 @@ namespace SyncroBE.Infrastructure.Repositories
             var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
 
             // Verifica si el usuario es vendedor para sacar unicamente sus ventas
-            if(user.UserRole == "Vendedor")
+            if (user.UserRole == "Vendedor")
             {
                 return await _context.Purchases
                     .Include(sd => sd.SaleDetails)
                     .Include(c => c.Client)
                     .Include(u => u.User)
-                    .Include(i => i.Invoice)
+                    .Include(i => i.Invoices)
                     .Include(ca => ca.ClientAccount)
+                    .Include(cr => cr.Register)
                     .Where(u => u.UserId == user.UserId)
+                    .OrderDescending()
                     .ToListAsync();
             }
             else
@@ -161,8 +159,10 @@ namespace SyncroBE.Infrastructure.Repositories
                     .Include(sd => sd.SaleDetails)
                     .Include(c => c.Client)
                     .Include(u => u.User)
-                    .Include(i => i.Invoice)
+                    .Include(i => i.Invoices)
                     .Include(ca => ca.ClientAccount)
+                    .Include(cr => cr.Register)
+                    .OrderDescending()
                     .ToListAsync();
             }
 
@@ -175,8 +175,9 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Include(sd => sd.SaleDetails)
                 .Include(c => c.Client)
                 .Include(u => u.User)
-                .Include(i => i.Invoice)
+                .Include(i => i.Invoices)
                 .Include(ca => ca.ClientAccount)
+                .Include(cr => cr.Register)
                 .FirstOrDefaultAsync(p => p.PurchaseId == id);
         }
 
@@ -191,24 +192,12 @@ namespace SyncroBE.Infrastructure.Repositories
             if (purchase.ClientAccountId != null && purchase.PurchasePaid)
             {
                 var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
-                var oldBalanceAmount = account.ClientAccountCurrentBalance;
-                account.ClientAccountCurrentBalance -= purchase.Total;
-
-                //Se agrega el movimiento
-                var movement = new ClientAccountMovement
-                {
-                    ClientAccountId = account.ClientAccountId,
-                    ClientAccountMovementDate = DateTime.Now,
-                    ClientAccountMovementDescription = $"Orden #{purchase.PurchaseOrderNumber}",
-                    ClientAccountMovementAmount = purchase.Total,
-                    ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
-                    ClientAccountMovementOldBalance = oldBalanceAmount,
-                    ClientAccountMovementType = "credit",
-                };
-
-                _context.ClientAccountMovements.Add(movement);
-                await _context.SaveChangesAsync();
+                InsertIntoClientAccountMovements(purchase, account);
             }
+
+            //Se agrega el movimiento a su caja asignada
+            if (purchase.PurchasePaid)
+                InsertIntoRegisterMovements(purchase);
 
             _context.Purchases.Update(purchase);
             await _context.SaveChangesAsync();
@@ -237,6 +226,40 @@ namespace SyncroBE.Infrastructure.Repositories
             await _context.SaleDetails.AddRangeAsync(saleItems);
 
             await _context.SaveChangesAsync();
+        }
+
+        public void InsertIntoRegisterMovements(Purchase sale)
+        {
+            var registerMovement = new CashRegisterMovement
+            {
+                CashRegisterId = sale.CashRegisterId,
+                PurchaseId = sale.PurchaseId,
+                UserId = sale.UserId,
+                CashRegisterMovementType = "income",
+                CashRegisterMovementDescription = $"Colocacion de venta - {sale.PurchaseOrderNumber}",
+                CashRegisterMovementAmount = sale.Total,
+            };
+            _context.CashRegisterMovements.Add(registerMovement);
+        }
+
+        public void InsertIntoClientAccountMovements(Purchase sale, ClientAccount account)
+        {
+            var oldBalanceAmount = account.ClientAccountCurrentBalance;
+            account.ClientAccountCurrentBalance += sale.Total;
+
+            //Se agrega el movimiento
+            var accountMovement = new ClientAccountMovement
+            {
+                ClientAccountId = account.ClientAccountId,
+                ClientAccountMovementDate = DateTime.Now,
+                ClientAccountMovementDescription = $"Orden #{sale.PurchaseOrderNumber}",
+                ClientAccountMovementAmount = sale.Total,
+                ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
+                ClientAccountMovementOldBalance = oldBalanceAmount,
+                ClientAccountMovementType = "debit",
+            };
+
+            _context.ClientAccountMovements.Add(accountMovement);
         }
     }
 }

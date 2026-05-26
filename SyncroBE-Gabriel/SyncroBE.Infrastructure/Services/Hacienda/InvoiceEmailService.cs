@@ -78,6 +78,64 @@ namespace SyncroBE.Infrastructure.Services.Hacienda
                 "Invoice email sent successfully to {Email}", recipientEmail);
         }
 
+        public async Task SendInvoiceEmailWithPdfAsync(Invoice invoice, string recipientEmail, byte[] pdfBytes)
+        {
+            _logger.LogInformation(
+                "Sending invoice {Clave} with PDF to {Email}", invoice.Clave, recipientEmail);
+
+            var docTypeName = invoice.DocumentType switch
+            {
+                "01" => "Factura Electrónica",
+                "03" => "Nota de Crédito Electrónica",
+                "04" => "Tiquete Electrónico",
+                _ => "Comprobante Electrónico"
+            };
+
+            using var message = new MailMessage
+            {
+                From = new MailAddress(_settings.FromEmail, _settings.FromName),
+                Subject = $"{docTypeName} - {invoice.Clave}",
+                IsBodyHtml = true,
+                Body = BuildEmailBody(invoice, docTypeName)
+            };
+
+            message.To.Add(new MailAddress(recipientEmail));
+
+            // Attach PDF
+            var pdfStream = new MemoryStream(pdfBytes);
+            var pdfFileName = $"{docTypeName} - {invoice.ConsecutiveNumber}.pdf";
+            message.Attachments.Add(new Attachment(pdfStream, pdfFileName, "application/pdf"));
+
+            // Attach signed XML
+            if (!string.IsNullOrEmpty(invoice.XmlSigned))
+            {
+                var xmlBytes = Encoding.UTF8.GetBytes(invoice.XmlSigned);
+                var xmlStream = new MemoryStream(xmlBytes);
+                var fileName = $"{invoice.Clave}.xml";
+                message.Attachments.Add(new Attachment(xmlStream, fileName, "application/xml"));
+            }
+
+            // Attach Hacienda response XML if available
+            if (!string.IsNullOrEmpty(invoice.XmlResponse))
+            {
+                var respBytes = Encoding.UTF8.GetBytes(invoice.XmlResponse);
+                var respStream = new MemoryStream(respBytes);
+                var respFileName = $"Respuesta-{invoice.Clave}.xml";
+                message.Attachments.Add(new Attachment(respStream, respFileName, "application/xml"));
+            }
+
+            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
+            {
+                Credentials = new NetworkCredential(_settings.Username, _settings.Password),
+                EnableSsl = _settings.UseSsl
+            };
+
+            await client.SendMailAsync(message);
+
+            _logger.LogInformation(
+                "Invoice email with PDF sent successfully to {Email}", recipientEmail);
+        }
+
         private static string BuildEmailBody(Invoice invoice, string docTypeName)
         {
             return $@"

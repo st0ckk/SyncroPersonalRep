@@ -365,8 +365,8 @@ appsettings.json
 appsettings.Development.json
 
 # Certificates and keys (electronic invoice)
-*.p12
+# *.p12   # temporarily allowed so deploy includes Hacienda cert
 *.pfx
 *.pem
 *.key
-Certificates/
+# Certificates/   # temporarily allowed

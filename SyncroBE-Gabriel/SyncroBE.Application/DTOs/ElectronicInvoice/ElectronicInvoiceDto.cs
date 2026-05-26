@@ -38,6 +38,11 @@ namespace SyncroBE.Application.DTOs.ElectronicInvoice
         public string Reason { get; set; } = null!;
     }
 
+    public class CancelInvoiceRequestDto
+    {
+        public string Reason { get; set; } = null!;
+    }
+
     public class InvoiceStatusDto
     {
         public int InvoiceId { get; set; }

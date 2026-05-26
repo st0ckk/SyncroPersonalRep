@@ -15,6 +15,7 @@ namespace SyncroBE.Application.DTOs.Sale
         public int? DiscountId { get; set; }
         public int RouteId { get; set; }
         public int? ClientAccountId { get; set; }
+        public int CashRegisterId { get; set; }
         public string ClientName { get; set; } = null!;
         public string UserName { get; set; } = null!;
         public string PurchaseOrderNumber { get; set; }
@@ -38,7 +39,8 @@ namespace SyncroBE.Application.DTOs.Sale
         public string? InvoiceConsecutiveNumber { get; set; }
 
         public List<SaleDetailDto> saleDetails { get; set; } = new();
-        public string? accountNumber { get; set; }
+        public string? AccountNumber { get; set; }
+        public string? RegisterNumber { get; set; }
     }
 
     public class SaleDetailDto
