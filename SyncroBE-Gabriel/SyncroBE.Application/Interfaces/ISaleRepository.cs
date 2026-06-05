@@ -14,5 +14,6 @@ namespace SyncroBE.Application.Interfaces
         Task<Purchase?> GetById(int id);
         Task<IEnumerable<Purchase>> FilterAsync(DateTime? startDate, DateTime? endDate, string searchTerm, string state, string paidState);
         Task UpdateAsync(Purchase Purchase, List<SaleDetail> saleItems);
+        Task<IEnumerable<Purchase>> ConfirmOrdersUnderAccount(string accountId);
     }
 }

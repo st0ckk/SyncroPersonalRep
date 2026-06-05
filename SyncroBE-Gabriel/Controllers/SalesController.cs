@@ -69,6 +69,19 @@ namespace SyncroBE.API.Controllers
             return Ok(dto);
         }
 
+        //Consigue la ultima cotizacion de un client
+        [HttpGet("account")]
+        public async Task<IActionResult> ConfirmOrdersUnderAccount(string clientId)
+        {
+            var data = await _repository.ConfirmOrdersUnderAccount(clientId);
+            if (data == null)
+                return Ok();
+
+            var result = data.Select(MapToSaleDto);
+
+            return Ok(result);
+        }
+
         //Consigue todas las ventas
         [HttpGet("filter")]
         public async Task<IActionResult> Filter(DateTime? startDate, DateTime? endDate, string searchTerm = "", string status = "", string paidStatus = "")
@@ -291,9 +304,11 @@ namespace SyncroBE.API.Controllers
                 if (purchase.ClientAccountId != null)
                 {
                     var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
+                    var oldBalanceAmount = account.ClientAccountCurrentBalance;
+
                     if (account != null)
                     {
-                        account.ClientAccountCurrentBalance -= purchase.Total;
+                        account.ClientAccountCurrentBalance = account.ClientAccountCurrentBalance - purchase.Total;
 
                         //Se agrega el movimiento
                         var movement = new ClientAccountMovement
@@ -302,8 +317,9 @@ namespace SyncroBE.API.Controllers
                             ClientAccountMovementDate = DateTime.Now,
                             ClientAccountMovementDescription = $"Rechazo de orden - Orden #{purchase.PurchaseOrderNumber}",
                             ClientAccountMovementAmount = purchase.Total,
+                            ClientAccountMovementOldBalance = oldBalanceAmount,
                             ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
-                            ClientAccountMovementType = "Credito",
+                            ClientAccountMovementType = "credit",
                         };
 
                         _context.ClientAccountMovements.Add(movement);
@@ -350,6 +366,8 @@ namespace SyncroBE.API.Controllers
                 PurchaseDiscountPercentage = p.PurchaseDiscountPercentage,
                 PurchaseDiscountReason = p.PurchaseDiscountReason,
                 PurchasePaymentMethod = p.PurchasePaymentMethod,
+                AccountNumber = p.ClientAccount != null ? p.ClientAccount.ClientAccountNumber : null,
+                RegisterNumber = p.Register.CashRegisterNumber,
 
                 // Electronic invoice info (primary invoice, not credit notes)
                 InvoiceId = p.Invoices.Where(i => i.DocumentType != "03").OrderByDescending(i => i.CreatedAt).FirstOrDefault()?.InvoiceId,

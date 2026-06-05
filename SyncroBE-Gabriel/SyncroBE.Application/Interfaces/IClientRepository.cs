@@ -9,6 +9,7 @@ namespace SyncroBE.Application.Interfaces
 {
     public interface IClientRepository
     {
+        Task<IEnumerable<Client>> GetAllClients();
         Task<IEnumerable<Client>> GetActiveAsync();
         Task<IEnumerable<Client>> GetInactiveAsync();
         Task<Client?> GetByIdAsync(string clientId);

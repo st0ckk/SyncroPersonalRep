@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SyncroBE.API.Helpers;
 using SyncroBE.Application.DTOs.Reports;
-using SyncroBE.Domain.Entities;
 using SyncroBE.Infrastructure.Data;
 using System.Security.Claims;
 using System.Text;
@@ -28,20 +26,6 @@ namespace SyncroBE.API.Controllers
             return int.TryParse(str, out var id) ? id : 0;
         }
 
-        // Filtro de estado de la venta.
-        //   "all"      → incluye ventas anuladas (IsActive == false)
-        //   "inactive" → únicamente ventas anuladas
-        //   resto      → únicamente ventas activas (comportamiento por defecto)
-        private static IQueryable<Purchase> ApplyStatusFilter(IQueryable<Purchase> query, string? status)
-        {
-            return status switch
-            {
-                "all" => query,
-                "inactive" => query.Where(p => !p.IsActive),
-                _ => query.Where(p => p.IsActive),
-            };
-        }
-
         // ══════════════════════════════════════════
         // GET /api/seller-reports/my-sales
         // Reporte de ventas del vendedor logueado
@@ -51,7 +35,6 @@ namespace SyncroBE.API.Controllers
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
             [FromQuery] string? paidStatus = null,
-            [FromQuery] string? status = null,
             [FromQuery] string? clientId = null)
         {
             var userId = GetUserId();
@@ -60,15 +43,13 @@ namespace SyncroBE.API.Controllers
             var query = _db.Purchases
                 .Include(p => p.Client)
                 .Include(p => p.User)
-                .Where(p => p.UserId == userId);
-
-            query = ApplyStatusFilter(query, status);
+                .Where(p => p.UserId == userId && p.IsActive);
 
             if (startDate.HasValue)
-                query = query.Where(p => p.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
+                query = query.Where(p => p.PurchaseDate >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(p => p.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+                query = query.Where(p => p.PurchaseDate <= endDate.Value.Date.AddDays(1));
 
             if (!string.IsNullOrEmpty(paidStatus))
             {
@@ -126,20 +107,17 @@ namespace SyncroBE.API.Controllers
         public async Task<IActionResult> ExportMySales(
             [FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
-            [FromQuery] string? paidStatus = null,
-            [FromQuery] string? status = null)
+            [FromQuery] string? paidStatus = null)
         {
             var userId = GetUserId();
             if (userId == 0) return Unauthorized();
 
             var query = _db.Purchases
                 .Include(p => p.Client)
-                .Where(p => p.UserId == userId);
+                .Where(p => p.UserId == userId && p.IsActive);
 
-            query = ApplyStatusFilter(query, status);
-
-            if (startDate.HasValue) query = query.Where(p => p.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
-            if (endDate.HasValue) query = query.Where(p => p.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+            if (startDate.HasValue) query = query.Where(p => p.PurchaseDate >= startDate.Value);
+            if (endDate.HasValue) query = query.Where(p => p.PurchaseDate <= endDate.Value.Date.AddDays(1));
             if (!string.IsNullOrEmpty(paidStatus)) { bool pd = paidStatus == "paid"; query = query.Where(p => p.PurchasePaid == pd); }
 
             var data = await query.OrderByDescending(p => p.PurchaseDate).Take(100_000).ToListAsync();
@@ -174,10 +152,10 @@ namespace SyncroBE.API.Controllers
                 .Where(sd => sd.Purchase.UserId == userId && sd.Purchase.IsActive);
 
             if (startDate.HasValue)
-                query = query.Where(sd => sd.Purchase.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
+                query = query.Where(sd => sd.Purchase.PurchaseDate >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(sd => sd.Purchase.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+                query = query.Where(sd => sd.Purchase.PurchaseDate <= endDate.Value.Date.AddDays(1));
 
             if (!string.IsNullOrEmpty(productType))
                 query = query.Where(sd => sd.Product.ProductType == productType);
@@ -222,10 +200,10 @@ namespace SyncroBE.API.Controllers
                 .Where(p => p.UserId == userId && p.IsActive);
 
             if (startDate.HasValue)
-                query = query.Where(p => p.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
+                query = query.Where(p => p.PurchaseDate >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(p => p.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+                query = query.Where(p => p.PurchaseDate <= endDate.Value.Date.AddDays(1));
 
             var grouped = await query
                 .GroupBy(p => new { p.ClientId, p.Client.ClientName, p.Client.ClientType })

@@ -44,6 +44,7 @@ namespace SyncroBE.Infrastructure.Repositories
             return await _context.Quotes
                 .Include(qd => qd.QuoteDetails)
                 .Include(u => u.User)
+                .OrderDescending()
                 .ToListAsync();
         }
 

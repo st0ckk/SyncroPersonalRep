@@ -25,8 +25,8 @@ namespace SyncroBE.Infrastructure.Auth
                 var key = Base32Decode(base32Secret);
                 var counter = DateTimeOffset.UtcNow.ToUnixTimeSeconds() / TimeStepSeconds;
 
-                // Validar ventana de ±1 paso para tolerar desfase de reloj
-                for (var offset = -1; offset <= 1; offset++)
+                // Validar ventana de ±2 pasos para tolerar desfase de reloj
+                for (var offset = -2; offset <= 2; offset++)
                 {
                     if (ComputeTotp(key, counter + offset) == code)
                         return true;

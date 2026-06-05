@@ -222,4 +222,8 @@ app.UseAuthorization();
 
 app.MapControllers().RequireCors("AllowReact");
 
+// SPA fallback: any request that doesn't match an API route or static file
+// serves index.html so React Router handles client-side routing.
+app.MapFallbackToFile("index.html");
+
 app.Run();

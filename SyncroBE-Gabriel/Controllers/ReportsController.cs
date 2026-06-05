@@ -1,10 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SyncroBE.API.Helpers;
 using SyncroBE.Application.DTOs.Reports;
 using SyncroBE.Infrastructure.Data;
-using System.Security.Claims;
 using System.Text;
 
 namespace SyncroBE.API.Controllers
@@ -20,15 +18,6 @@ namespace SyncroBE.API.Controllers
         {
             _db = db;
         }
-
-        private int GetUserId()
-        {
-            var str = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return int.TryParse(str, out var id) ? id : 0;
-        }
-
-        // Roles que solo pueden ver sus propias ventas, nunca las de otros usuarios.
-        private bool IsSellerScoped() => User.IsInRole("Vendedor") || User.IsInRole("Chofer");
 
         // ══════════════════════════════════════════
         // GET /api/reports/sales
@@ -48,18 +37,11 @@ namespace SyncroBE.API.Controllers
                 .Include(p => p.User)
                 .AsQueryable();
 
-            // Los vendedores/choferes solo ven sus propias ventas; los administradores
-            // pueden filtrar por un usuario específico (o ver todas).
-            if (IsSellerScoped())
-                query = query.Where(p => p.UserId == GetUserId());
-            else if (userId.HasValue)
-                query = query.Where(p => p.UserId == userId.Value);
-
             if (startDate.HasValue)
-                query = query.Where(p => p.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
+                query = query.Where(p => p.PurchaseDate >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(p => p.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+                query = query.Where(p => p.PurchaseDate <= endDate.Value.Date.AddDays(1));
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -75,6 +57,9 @@ namespace SyncroBE.API.Controllers
                 bool isPaid = paidStatus == "paid";
                 query = query.Where(p => p.PurchasePaid == isPaid);
             }
+
+            if (userId.HasValue)
+                query = query.Where(p => p.UserId == userId.Value);
 
             var data = await query
                 .OrderByDescending(p => p.PurchaseDate)
@@ -133,16 +118,12 @@ namespace SyncroBE.API.Controllers
                 .Include(p => p.User)
                 .AsQueryable();
 
-            if (IsSellerScoped())
-                query = query.Where(p => p.UserId == GetUserId());
-            else if (userId.HasValue)
-                query = query.Where(p => p.UserId == userId.Value);
-
-            if (startDate.HasValue) query = query.Where(p => p.PurchaseDate >= ReportDates.StartUtc(startDate.Value));
-            if (endDate.HasValue) query = query.Where(p => p.PurchaseDate < ReportDates.EndUtcExclusive(endDate.Value));
+            if (startDate.HasValue) query = query.Where(p => p.PurchaseDate >= startDate.Value);
+            if (endDate.HasValue) query = query.Where(p => p.PurchaseDate <= endDate.Value.Date.AddDays(1));
             if (!string.IsNullOrEmpty(status)) { bool a = status == "active"; query = query.Where(p => p.IsActive == a); }
             if (!string.IsNullOrEmpty(paymentMethod)) query = query.Where(p => p.PurchasePaymentMethod == paymentMethod);
             if (!string.IsNullOrEmpty(paidStatus)) { bool pd = paidStatus == "paid"; query = query.Where(p => p.PurchasePaid == pd); }
+            if (userId.HasValue) query = query.Where(p => p.UserId == userId.Value);
 
             var data = await query.OrderByDescending(p => p.PurchaseDate).Take(100_000).ToListAsync();
 
@@ -256,15 +237,11 @@ namespace SyncroBE.API.Controllers
                 .Include(i => i.Purchase).ThenInclude(p => p.User)
                 .AsQueryable();
 
-            // Los vendedores/choferes solo ven la facturación de sus propias ventas.
-            if (IsSellerScoped())
-                query = query.Where(i => i.Purchase != null && i.Purchase.UserId == GetUserId());
-
             if (startDate.HasValue)
-                query = query.Where(i => i.EmissionDate >= ReportDates.StartUtc(startDate.Value));
+                query = query.Where(i => i.EmissionDate >= startDate.Value);
 
             if (endDate.HasValue)
-                query = query.Where(i => i.EmissionDate < ReportDates.EndUtcExclusive(endDate.Value));
+                query = query.Where(i => i.EmissionDate <= endDate.Value.Date.AddDays(1));
 
             if (!string.IsNullOrEmpty(haciendaStatus))
                 query = query.Where(i => i.HaciendaStatus == haciendaStatus);
@@ -326,11 +303,8 @@ namespace SyncroBE.API.Controllers
                 .Include(i => i.Purchase).ThenInclude(p => p.User)
                 .AsQueryable();
 
-            if (IsSellerScoped())
-                query = query.Where(i => i.Purchase != null && i.Purchase.UserId == GetUserId());
-
-            if (startDate.HasValue) query = query.Where(i => i.EmissionDate >= ReportDates.StartUtc(startDate.Value));
-            if (endDate.HasValue) query = query.Where(i => i.EmissionDate < ReportDates.EndUtcExclusive(endDate.Value));
+            if (startDate.HasValue) query = query.Where(i => i.EmissionDate >= startDate.Value);
+            if (endDate.HasValue) query = query.Where(i => i.EmissionDate <= endDate.Value.Date.AddDays(1));
             if (!string.IsNullOrEmpty(haciendaStatus)) query = query.Where(i => i.HaciendaStatus == haciendaStatus);
             if (!string.IsNullOrEmpty(documentType)) query = query.Where(i => i.DocumentType == documentType);
 
