@@ -19,6 +19,10 @@ namespace SyncroBE.Infrastructure.Repositories
             _context = context;
         }
 
+        public async Task<IEnumerable<Client>> GetAllClients()
+        {
+            return await _context.Clients.ToListAsync();
+        }
         public async Task<IEnumerable<Client>> GetActiveAsync()
         {
             return await _context.Clients
@@ -29,7 +33,6 @@ namespace SyncroBE.Infrastructure.Repositories
                 .Where(c => c.IsActive)
                 .ToListAsync();
         }
-
 
         public async Task<IEnumerable<Client>> GetInactiveAsync()
         {
@@ -69,8 +72,6 @@ namespace SyncroBE.Infrastructure.Repositories
                 })
                 .ToListAsync();
         }
-
-
 
         public async Task AddAsync(Client client)
         {

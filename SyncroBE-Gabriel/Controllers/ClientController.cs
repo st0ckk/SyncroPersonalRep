@@ -38,6 +38,15 @@ namespace SyncroBE.API.Controllers
             return Ok(Map(clients));
         }
 
+
+        // get para todos los clientes sin importar su estado
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllClients()
+        {
+            var clients = await _repository.GetAllClients();
+            return Ok(Map(clients));
+        }
+
         // post para crear un nuevo cliente
         [HttpPost]
         public async Task<IActionResult> Create(ClientCreateUpdateDto dto)

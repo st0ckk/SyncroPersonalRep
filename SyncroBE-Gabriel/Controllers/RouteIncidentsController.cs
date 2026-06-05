@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using SyncroBE.API.Authorization;
 using SyncroBE.Infrastructure.Data;
 using System.Security.Claims;
 
@@ -58,7 +59,7 @@ public class RouteIncidentsController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "SuperUsuario,Administrador,Vendedor")]
+    [ScreenOrRole("rutas-monitoreo", "SuperUsuario", "Administrador", "Vendedor")]
     public async Task<IActionResult> GetAll([FromQuery] string? date, [FromQuery] int? driverUserId)
     {
         DateTime start, end;

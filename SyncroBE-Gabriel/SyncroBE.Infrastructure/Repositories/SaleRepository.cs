@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SyncroBE.Application.Interfaces;
 using SyncroBE.Domain.Entities;
 using SyncroBE.Infrastructure.Data;
@@ -54,13 +54,16 @@ namespace SyncroBE.Infrastructure.Repositories
             if (purchase.ClientAccountId != null)
             {
                 var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
-                InsertIntoClientAccountMovements(purchase, account);
+                InsertIntoClientAccountMovements(purchase, account, false);
             }
 
 
             //Se agrega el movimiento a su caja asignada
             if (purchase.PurchasePaid)
+            {
+                purchase.IsActive = false;
                 InsertIntoRegisterMovements(purchase);
+            }
 
             await _context.SaveChangesAsync();
 
@@ -189,15 +192,19 @@ namespace SyncroBE.Infrastructure.Repositories
                 .ToListAsync();
 
             //Si se pago con cuenta de credito, se ingresa el monto al balance
-            if (purchase.ClientAccountId != null && purchase.PurchasePaid)
+            if (purchase.ClientAccountId != null && purchase.PurchasePaid && purchase.IsActive)
             {
                 var account = await _context.ClientAccounts.FirstOrDefaultAsync(ca => ca.ClientAccountId == purchase.ClientAccountId);
-                InsertIntoClientAccountMovements(purchase, account);
+                InsertIntoClientAccountMovements(purchase, account,true);
             }
 
             //Se agrega el movimiento a su caja asignada
-            if (purchase.PurchasePaid)
+            if (purchase.PurchasePaid && purchase.IsActive)
+            {
+                purchase.IsActive = false;
                 InsertIntoRegisterMovements(purchase);
+            }
+                
 
             _context.Purchases.Update(purchase);
             await _context.SaveChangesAsync();
@@ -242,24 +249,57 @@ namespace SyncroBE.Infrastructure.Repositories
             _context.CashRegisterMovements.Add(registerMovement);
         }
 
-        public void InsertIntoClientAccountMovements(Purchase sale, ClientAccount account)
+        public void InsertIntoClientAccountMovements(Purchase sale, ClientAccount account, bool ifPaid)
         {
             var oldBalanceAmount = account.ClientAccountCurrentBalance;
-            account.ClientAccountCurrentBalance += sale.Total;
+            var accountMovement = new ClientAccountMovement();
 
             //Se agrega el movimiento
-            var accountMovement = new ClientAccountMovement
+            if(ifPaid)
             {
-                ClientAccountId = account.ClientAccountId,
-                ClientAccountMovementDate = DateTime.Now,
-                ClientAccountMovementDescription = $"Orden #{sale.PurchaseOrderNumber}",
-                ClientAccountMovementAmount = sale.Total,
-                ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
-                ClientAccountMovementOldBalance = oldBalanceAmount,
-                ClientAccountMovementType = "debit",
-            };
+                account.ClientAccountCurrentBalance = account.ClientAccountCurrentBalance - sale.Total;
+                accountMovement = new ClientAccountMovement
+                {
+                    ClientAccountId = account.ClientAccountId,
+                    ClientAccountMovementDate = DateTime.Now,
+                    ClientAccountMovementDescription = $"Pago de Orden #{sale.PurchaseOrderNumber}",
+                    ClientAccountMovementAmount = sale.Total,
+                    ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
+                    ClientAccountMovementOldBalance = oldBalanceAmount,
+                    ClientAccountMovementType = "credit",
+                };
+            }
+            else
+            {
+                account.ClientAccountCurrentBalance = account.ClientAccountCurrentBalance + sale.Total;
+                accountMovement = new ClientAccountMovement
+                {
+                    ClientAccountId = account.ClientAccountId,
+                    ClientAccountMovementDate = DateTime.Now,
+                    ClientAccountMovementDescription = $"Orden #{sale.PurchaseOrderNumber}",
+                    ClientAccountMovementAmount = sale.Total,
+                    ClientAccountMovementNewBalance = account.ClientAccountCurrentBalance,
+                    ClientAccountMovementOldBalance = oldBalanceAmount,
+                    ClientAccountMovementType = "debit",
+                };
+            }
 
-            _context.ClientAccountMovements.Add(accountMovement);
+
+                _context.ClientAccountMovements.Add(accountMovement);
+        }
+
+        public async Task<IEnumerable<Purchase>> ConfirmOrdersUnderAccount(string accountId)
+        {
+            string account = $"credit-{accountId}";
+            return await _context.Purchases
+                .Include(sd => sd.SaleDetails)
+                .Include(c => c.Client)
+                .Include(u => u.User)
+                .Include(i => i.Invoices)
+                .Include(ca => ca.ClientAccount)
+                .Include(cr => cr.Register)
+                .Where(p => p.PurchasePaymentMethod == account && p.IsActive)
+                .ToListAsync();
         }
     }
 }
