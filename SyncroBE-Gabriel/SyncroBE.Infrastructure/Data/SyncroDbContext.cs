@@ -137,6 +137,15 @@ namespace SyncroBE.Infrastructure.Data
                 entity.Property(e => e.IsService)
                       .HasColumnName("is_service")
                       .HasDefaultValue(false);
+                
+                entity.Property(e => e.BatchId)
+                      .HasColumnName("batch_id")
+                      .HasMaxLength(50)
+                      .IsRequired(false);
+
+                entity.Property(e => e.ExpirationDate)
+                      .HasColumnName("expiration_date")
+                      .IsRequired(false);
             });
 
             /* CLIENT */

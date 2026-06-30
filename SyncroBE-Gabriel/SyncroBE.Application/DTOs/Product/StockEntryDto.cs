@@ -10,6 +10,8 @@ namespace SyncroBE.Application.DTOs.Product
     {
         public int ProductId { get; set; }
         public int Quantity { get; set; }
+        public string? BatchId { get; set; }
+        public DateTime? ExpirationDate { get; set; }
     }
 }
 

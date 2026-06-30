@@ -24,6 +24,9 @@
         public virtual ICollection<QuoteDetail> QuoteDetails { get; set; }
 
         public virtual ICollection<SaleDetail> SaleDetails { get; set; }
+
+        public string? BatchId { get; set; }
+        public DateTime? ExpirationDate { get; set; }
     }
 }
 

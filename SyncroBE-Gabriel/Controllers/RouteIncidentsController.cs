@@ -30,7 +30,7 @@ public class RouteIncidentsController : ControllerBase
         if (string.IsNullOrWhiteSpace(dto.IncidentType))
             return BadRequest(new { message = "El tipo de incidente es requerido." });
 
-        var now = DateTime.UtcNow;
+        var now = GetNowCostaRica();
 
         try
         {
@@ -66,12 +66,12 @@ public class RouteIncidentsController : ControllerBase
 
         if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
         {
-            start = d.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
-            end   = d.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+            start = d.ToDateTime(TimeOnly.MinValue);
+            end   = d.ToDateTime(TimeOnly.MaxValue);
         }
         else
         {
-            start = DateTime.UtcNow.Date;
+            start = GetNowCostaRica().Date;
             end   = start.AddDays(1);
         }
 
@@ -106,6 +106,14 @@ public class RouteIncidentsController : ControllerBase
         var raw = User.FindFirstValue(ClaimTypes.NameIdentifier)
                ?? User.FindFirstValue("sub");
         return int.TryParse(raw, out var id) ? id : null;
+    }
+
+    private static DateTime GetNowCostaRica()
+    {
+        TimeZoneInfo tz;
+        try   { tz = TimeZoneInfo.FindSystemTimeZoneById("Central America Standard Time"); }
+        catch { tz = TimeZoneInfo.FindSystemTimeZoneById("America/Costa_Rica"); }
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
     }
 }
 

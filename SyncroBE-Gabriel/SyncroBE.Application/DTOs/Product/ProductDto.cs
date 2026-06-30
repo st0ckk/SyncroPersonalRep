@@ -21,5 +21,8 @@ namespace SyncroBE.Application.DTOs.Product
         public bool IsActive { get; set; }
         public string? CabysCode { get; set; }
         public bool IsService { get; set; }
+
+        public string? BatchId { get; set; }
+        public DateTime? ExpirationDate { get; set; }
     }
 }

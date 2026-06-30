@@ -23,11 +23,11 @@ namespace SyncroBE.Infrastructure.Repositories
         public async Task AddAsync(Quote quote, List<QuoteDetail> quoteItems)
         {
             //Establecimiento del numero de cotizacion
-            var latestQuote = await _context.Quotes.OrderByDescending(q => q.QuoteNumber).FirstOrDefaultAsync();
+            var latestQuote = await _context.Quotes.OrderByDescending(q => q.QuoteId).FirstOrDefaultAsync();
 
-            int numberForQuote = (latestQuote != null ? int.Parse(latestQuote.QuoteNumber.Split('-')[2]) : 0) + 1;
+            int numberForQuote = (latestQuote != null || latestQuote?.QuoteDate > DateTime.Now.Date ? int.Parse(latestQuote.QuoteNumber.Split('-')[2]) : 0) + 1;
 
-            quote.QuoteNumber = $"COT-{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}-{numberForQuote:D4}";
+            quote.QuoteNumber = $"COT-{DateTime.Now.Year}{DateTime.Now.Month:D2}{DateTime.Now.Day:D2}-{numberForQuote:D4}";
             _context.Quotes.Add(quote);
             await _context.SaveChangesAsync();
 

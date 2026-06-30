@@ -23,11 +23,11 @@ namespace SyncroBE.Infrastructure.Repositories
         public async Task AddAsync(CashRegister cashRegister)
         {
             //Establecimiento del numero de cuenta
-            var latestRegister = await _context.CashRegisters.OrderByDescending(cr => cr.CashRegisterNumber).FirstOrDefaultAsync();
+            var latestRegister = await _context.CashRegisters.OrderByDescending(cr => cr.CashRegisterId).FirstOrDefaultAsync();
 
             int numberForRegister = (latestRegister != null ? int.Parse(latestRegister.CashRegisterNumber.Split('-')[2]) : 0) + 1;
 
-            cashRegister.CashRegisterNumber = $"REG-{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}-{numberForRegister:D4}";
+            cashRegister.CashRegisterNumber = $"REG-{DateTime.Now.Year}{DateTime.Now.Month:D2}{DateTime.Now.Day:D2}-{numberForRegister:D4}";
             _context.CashRegisters.Add(cashRegister);
 
             await _context.SaveChangesAsync();

@@ -88,7 +88,9 @@ public class StockController : ControllerBase
             ProductQuantity = dto.ProductQuantity,
             CabysCode = dto.CabysCode,
             IsService = dto.IsService,
-            IsActive = true
+            IsActive = true,
+            BatchId = dto.BatchId,
+            ExpirationDate = dto.ExpirationDate,
         };
 
         try
@@ -141,6 +143,8 @@ public class StockController : ControllerBase
         product.IsActive = dto.IsActive;
         product.CabysCode = dto.CabysCode;
         product.IsService = dto.IsService;
+        product.BatchId = dto.BatchId;
+        product.ExpirationDate = dto.ExpirationDate;
 
         try
         {
@@ -209,7 +213,9 @@ public class StockController : ControllerBase
             ProductQuantity = p.ProductQuantity,
             IsActive = p.IsActive,
             CabysCode = p.CabysCode,
-            IsService = p.IsService
+            IsService = p.IsService,
+            BatchId = p.BatchId,
+            ExpirationDate = p.ExpirationDate
         });
 
         return Ok(result);
@@ -227,6 +233,15 @@ public class StockController : ControllerBase
             return NotFound();
 
         product.ProductQuantity += dto.Quantity;
+
+        if (dto.ExpirationDate.HasValue)
+        {
+            if (product.ExpirationDate == null || dto.ExpirationDate.Value < product.ExpirationDate.Value)
+            {
+                product.ExpirationDate = dto.ExpirationDate.Value;
+                product.BatchId = dto.BatchId;
+            }
+        }
 
         try
         {
@@ -265,6 +280,8 @@ public class StockController : ControllerBase
         ProductQuantity = p.ProductQuantity,
         IsActive = p.IsActive,
         CabysCode = p.CabysCode,
-        IsService = p.IsService
+        IsService = p.IsService,
+        BatchId = p.BatchId,
+        ExpirationDate = p.ExpirationDate
     };
 }

@@ -23,11 +23,11 @@ namespace SyncroBE.Infrastructure.Repositories
         public async Task AddAsync(ClientAccount account)
         {
             //Establecimiento del numero de cuenta
-            var latestAccount = await _context.ClientAccounts.OrderByDescending(ca => ca.ClientAccountNumber).FirstOrDefaultAsync();
+            var latestAccount = await _context.ClientAccounts.OrderByDescending(ca => ca.ClientAccountId).FirstOrDefaultAsync();
 
             int numberForAccount = (latestAccount != null ? int.Parse(latestAccount.ClientAccountNumber.Split('-')[2]) : 0) + 1;
 
-            account.ClientAccountNumber = $"CCA-{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}-{numberForAccount:D4}";
+            account.ClientAccountNumber = $"CCA-{DateTime.Now.Year}{DateTime.Now.Month:D2}{DateTime.Now.Day:D2}-{numberForAccount:D4}";
             _context.ClientAccounts.Add(account);
 
             await _context.SaveChangesAsync();

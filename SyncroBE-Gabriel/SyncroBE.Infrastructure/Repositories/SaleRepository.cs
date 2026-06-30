@@ -30,11 +30,11 @@ namespace SyncroBE.Infrastructure.Repositories
                 .ToListAsync();
 
             //Establecimiento del numero de venta
-            var latestSale = await _context.Purchases.OrderByDescending(p => p.PurchaseOrderNumber).FirstOrDefaultAsync();
+            var latestSale = await _context.Purchases.OrderByDescending(p => p.PurchaseId).FirstOrDefaultAsync();
 
             int numberForPurchase = (latestSale != null ? int.Parse(latestSale.PurchaseOrderNumber.Split('-')[2]) : 0) + 1;
 
-            purchase.PurchaseOrderNumber = $"PUR-{DateTime.Now.Year}{DateTime.Now.Month}{DateTime.Now.Day}-{numberForPurchase:D4}";
+            purchase.PurchaseOrderNumber = $"PUR-{DateTime.Now.Year}{DateTime.Now.Month:D2}{DateTime.Now.Day:D2}-{numberForPurchase:D4}";
             _context.Purchases.Add(purchase);
             await _context.SaveChangesAsync();
 
