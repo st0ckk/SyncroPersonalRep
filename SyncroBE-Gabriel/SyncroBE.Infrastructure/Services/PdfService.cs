@@ -757,7 +757,8 @@ namespace SyncroBE.Infrastructure.Services
                 "01" => "Efectivo",
                 "02" => "Tarjeta",
                 "03" => "Cheque",
-                "04" => "Transferencia / SINPE",
+                "04" => "Transferencia",
+                "06" => "SINPE MOVIL",
                 _ => invoice.PaymentMethodCode ?? "N/A"
             };
 

@@ -97,7 +97,7 @@ namespace Syncro.API.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var distributor = await _repository.GetByIdAsync(id);
+            var distributor = await _repository.GetByIdUniversalAsync(id);
             if (distributor == null)
                 return NotFound();
 

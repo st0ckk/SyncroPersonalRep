@@ -23,12 +23,18 @@ namespace SyncroBE.Infrastructure.Services.Hacienda
             ["efectivo"] = "01",
             ["cash"] = "01",
             ["tarjeta"] = "02",
+            ["tarjeta de credito"] = "02",
+            ["tarjeta de crédito"] = "02",
+            ["tarjeta de debito"] = "02",
+            ["tarjeta de débito"] = "02",
+            ["debitcard"] = "02",
+            ["creditcard"] = "02",
             ["card"] = "02",
+            ["credito"] = "02",
             ["cheque"] = "03",
             ["transferencia"] = "04",
             ["transfer"] = "04",
-            ["credito"] = "02",
-            ["sinpe"] = "04",
+            ["sinpe"] = "06",
         };
 
         // Hacienda unit of measure codes

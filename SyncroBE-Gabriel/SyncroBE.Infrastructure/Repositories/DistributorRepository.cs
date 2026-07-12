@@ -45,7 +45,11 @@ namespace SyncroBE.Infrastructure.Repositories
             return await _context.Distributors
                                  .FirstOrDefaultAsync(d => d.DistributorId == id && d.IsActive);
         }
-
+        public async Task<Distributor?> GetByIdUniversalAsync(int id)
+        {
+            return await _context.Distributors
+                                 .FirstOrDefaultAsync(d => d.DistributorId == id);
+        }
         public async Task<Distributor?> GetByIdIncludingInactiveAsync(int id)
         {
             return await _context.Distributors

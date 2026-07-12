@@ -16,6 +16,7 @@ namespace SyncroBE.Application.Interfaces
         Task ActivateAsync(Distributor distributor);
         Task<Distributor?> GetByIdIncludingInactiveAsync(int id);
         Task<IEnumerable<Distributor>> GetInactiveAsync();
+        Task<Distributor?> GetByIdUniversalAsync(int id);
 
 
     }

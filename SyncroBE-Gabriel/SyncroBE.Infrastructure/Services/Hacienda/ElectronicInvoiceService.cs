@@ -381,9 +381,11 @@ namespace SyncroBE.Infrastructure.Services.Hacienda
             return method.ToLowerInvariant() switch
             {
                 "efectivo" or "cash" => "01",
-                "tarjeta" or "card" => "02",
+                "tarjeta" or "card" or "tarjeta de credito" or "tarjeta de crédito" or "creditcard" or "debitcard"
+                    or "tarjeta de debito" or "tarjeta de débito" or "credito" => "02",
                 "cheque" => "03",
-                "transferencia" or "transfer" or "sinpe" => "04",
+                "transferencia" or "transfer" => "04",
+                "sinpe" => "06",
                 _ => "99"
             };
         }
